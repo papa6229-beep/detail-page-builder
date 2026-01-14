@@ -149,7 +149,33 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
         {/* 메인 특징 영역 */}
         <section className="pb-32">
-          <SectionBar title="MAIN FEATURES" color={themeColor} />
+          {/* ▼▼▼ 여기부터 커스텀 헤더 디자인 시작 (이 부분만 다름) ▼▼▼ */}
+          <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
+            {/* 1. 그라데이션 바 (상품명 한글) */}
+            <div 
+              className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
+              style={{ 
+                background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
+                minWidth: '320px'
+              }}
+            >
+              {productNameKr || "상품명"}
+            </div>
+
+            {/* 2. 메인 타이틀 (MAIN FEATURES) */}
+            <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
+              특징
+            </h3>
+
+            {/* 3. Check! 및 세로선 장식 */}
+            <div className="flex flex-col items-center">
+              <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
+              <div className="w-px h-12 bg-gray-400"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+            </div>
+          </div>
+          {/* ▲▲▲ 커스텀 헤더 디자인 끝 ▲▲▲ */}
+
           <div className="px-10">
             <div className="w-full aspect-video bg-gray-100 mb-10 overflow-hidden rounded-lg">
                {featureImage ? (
@@ -168,7 +194,30 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
         {/* POINT 1 영역 */}
         <section className="pb-32">
-          <SectionBar title="POINT 01" color={themeColor} />
+          {/* ▼▼▼ POINT 1 전용 커스텀 디자인 헤더 ▼▼▼ */}
+          <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
+            <div 
+              className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
+              style={{ 
+                background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
+                minWidth: '320px'
+              }}
+            >
+              {productNameKr || "상품명"}
+            </div>
+
+            <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
+              POINT 01
+            </h3>
+
+            <div className="flex flex-col items-center">
+              <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
+              <div className="w-px h-12 bg-gray-400"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+            </div>
+          </div>
+          {/* ▲▲▲ 헤더 끝 ▲▲▲ */}
+
           <div className="px-10">
             <div className="w-full aspect-square bg-gray-50 mb-10 overflow-hidden">
                {point1Image1 ? (
@@ -194,7 +243,30 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
         {/* POINT 2 영역 */}
         <section className="pb-32">
-          <SectionBar title="POINT 02" color={themeColor} />
+          {/* ▼▼▼ POINT 2 전용 커스텀 디자인 헤더 ▼▼▼ */}
+          <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
+            <div 
+              className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
+              style={{ 
+                background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
+                minWidth: '320px'
+              }}
+            >
+              {productNameKr || "상품명"}
+            </div>
+
+            <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
+              POINT 02
+            </h3>
+
+            <div className="flex flex-col items-center">
+              <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
+              <div className="w-px h-12 bg-gray-400"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+            </div>
+          </div>
+          {/* ▲▲▲ 헤더 끝 ▲▲▲ */}
+
           <div className="px-10">
             <div className="w-full aspect-square bg-gray-50 mb-10 overflow-hidden">
                {point2Image1 ? (
@@ -218,9 +290,32 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </div>
         </section>
 
-        {/* 사이즈 영역 */}
+       {/* 사이즈 영역 */}
         <section className="pb-32">
-          <SectionBar title="SIZE & INFO" color={themeColor} />
+          {/* ▼▼▼ SIZE & INFO 전용 커스텀 디자인 헤더 ▼▼▼ */}
+          <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
+            <div 
+              className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
+              style={{ 
+                background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
+                minWidth: '320px'
+              }}
+            >
+              {productNameKr || "상품명"}
+            </div>
+
+            <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
+              SIZE & INFO
+            </h3>
+
+            <div className="flex flex-col items-center">
+              <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
+              <div className="w-px h-12 bg-gray-400"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+            </div>
+          </div>
+          {/* ▲▲▲ 헤더 끝 ▲▲▲ */}
+
           <div className="px-10 text-center">
             <div className="mb-12 inline-block px-8 py-4 border-2 rounded-full" style={{ borderColor: themeColor }}>
               <span className="text-sm font-bold text-gray-400 mr-2 uppercase">Weight</span>

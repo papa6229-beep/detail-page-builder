@@ -1,6 +1,5 @@
-
-import React, { useState, useRef, useCallback } from 'react';
-import { toPng } from 'html-to-image';
+import React, { useState, useRef } from 'react';
+import html2canvas from 'html2canvas'; // ⭐ html-to-image 대신 더 안정적인 html2canvas 사용
 import { ProductData } from './types';
 import { INITIAL_PRODUCT_DATA, THUMBNAIL_SIZES } from './constants';
 import Editor from './components/Editor';
@@ -11,6 +10,8 @@ import { generateCopywriting } from './services/geminiService';
 const App: React.FC = () => {
   const [data, setData] = useState<ProductData>(INITIAL_PRODUCT_DATA);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Ref 설정
   const detailRef = useRef<HTMLDivElement>(null);
   const thumbnailRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -31,74 +32,114 @@ const App: React.FC = () => {
     }
   };
 
+  // ▼▼▼ [수정됨] 상세페이지 800px 고정 + 전체 캡처 기능 ▼▼▼
   const exportDetailPage = async () => {
     if (!detailRef.current) return;
+    
+    setIsLoading(true);
     try {
-      const dataUrl = await toPng(detailRef.current, { 
-        pixelRatio: 2,
-        quality: 1,
+      const element = detailRef.current;
+      
+      // 스크롤 포함 전체 높이 계산
+      const fullHeight = element.scrollHeight; 
+
+      const canvas = await html2canvas(element, {
+        scale: 1,             // ⭐ 모니터 해상도 무시하고 1:1 비율 저장
+        useCORS: true,        // 이미지 깨짐 방지
+        allowTaint: true,
+        width: 800,           // ⭐ 가로 800px 강제 고정
+        height: fullHeight,   // ⭐ 세로 전체 높이 강제 지정 (잘림 방지)
+        windowWidth: 800,     // 가상 브라우저 너비
+        windowHeight: fullHeight, // 가상 브라우저 높이
+        x: 0,
+        y: 0,
+        scrollY: 0,           // 스크롤 위치 초기화해서 맨 위부터 찍기
         backgroundColor: '#ffffff'
       });
+
+      const image = canvas.toDataURL('image/png'); // PNG 포맷 유지
       const link = document.createElement('a');
-      link.download = `detail_page_${data.productNameKr || 'standard'}.png`;
-      link.href = dataUrl;
+      link.download = `detail_page_${data.productNameKr || 'standard'}_800px.png`;
+      link.href = image;
       link.click();
     } catch (err) {
       console.error('Export failed', err);
       alert('상세페이지 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // ▼▼▼ 썸네일 저장 기능 (기존 유지) ▼▼▼
   const exportThumbnails = async () => {
+    setIsLoading(true);
     try {
       for (let i = 0; i < THUMBNAIL_SIZES.length; i++) {
         const ref = thumbnailRefs.current[i];
         if (ref) {
           const size = THUMBNAIL_SIZES[i];
-          const dataUrl = await toPng(ref, { 
-            pixelRatio: 2,
+          
+          // 썸네일도 html2canvas로 통일 (안정성 확보)
+          const canvas = await html2canvas(ref, {
+            scale: 1,
+            useCORS: true,
+            backgroundColor: '#ffffff',
             width: size,
             height: size,
-            backgroundColor: '#ffffff'
+            windowWidth: size,
+            windowHeight: size
           });
+          
+          const image = canvas.toDataURL('image/png');
           const link = document.createElement('a');
           link.download = `thumbnail_${size}.png`;
-          link.href = dataUrl;
+          link.href = image;
           link.click();
+
+          // 다운로드 충돌 방지 딜레이
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
       }
     } catch (err) {
       console.error('Thumbnail export failed', err);
       alert('썸네일 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      {/* Navbar */}
-      <nav className="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm z-10">
+    <div className="h-screen flex flex-col bg-gray-100 font-sans">
+      {/* Navbar (리더님이 원하시던 그 디자인 복구!) */}
+      <nav className="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm z-20 sticky top-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-rose-600 rounded-lg flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+             <span className="text-white font-black text-xl">B</span>
           </div>
-          <h1 className="text-xl font-black text-gray-800 tracking-tight">상세페이지 빌더 <span className="text-gray-400 font-medium text-sm ml-2">v1.0 (PRO)</span></h1>
+          <h1 className="text-xl font-black text-gray-800 tracking-tight">상세페이지 빌더 <span className="text-gray-400 font-medium text-sm ml-2">v3.0</span></h1>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={exportThumbnails}
-            className="px-4 py-2 border-2 border-rose-100 text-rose-600 rounded-lg font-bold hover:bg-rose-50 transition-all flex items-center gap-2"
+            disabled={isLoading}
+            className="px-4 py-2 border-2 border-rose-100 text-rose-600 rounded-lg font-bold hover:bg-rose-50 transition-all flex items-center gap-2 disabled:opacity-50"
           >
              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Export Thumbnail
           </button>
           <button 
             onClick={exportDetailPage}
-            className="px-6 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 shadow-md active:scale-95 transition-all flex items-center gap-2"
+            disabled={isLoading}
+            className="px-6 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 shadow-md active:scale-95 transition-all flex items-center gap-2 disabled:bg-gray-400"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Export PNG (800px)
+            {isLoading ? (
+               <span>처리중...</span>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Export PNG (800px)
+              </>
+            )}
           </button>
         </div>
       </nav>
@@ -106,7 +147,7 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 flex overflow-hidden">
         {/* Left: Input Editor */}
-        <aside className="w-1/3 min-w-[400px] border-r h-full p-4 overflow-hidden">
+        <aside className="w-[500px] border-r h-full p-4 overflow-hidden shrink-0 bg-white z-10">
           <Editor 
             data={data} 
             onChange={setData} 
@@ -116,38 +157,30 @@ const App: React.FC = () => {
         </aside>
 
         {/* Right: Preview Areas */}
-        <section className="flex-1 flex flex-col h-full bg-gray-50 overflow-hidden relative">
-          <div className="flex items-center gap-4 p-4 border-b bg-white">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Preview Mode</span>
-            <div className="flex gap-2">
-                <span className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-bold text-gray-600">DETAIL VIEW</span>
-                <span className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-bold text-gray-600">THUMBNAILS</span>
-            </div>
-          </div>
-          
-          <div className="flex-1 overflow-auto flex flex-col items-center">
-             <div className="p-8 w-full flex flex-col items-center">
-                <Preview data={data} ref={detailRef} />
-                
-                {/* Hidden/Helper Thumbnails for Export */}
-                <div className="mt-20 p-10 bg-white shadow-lg rounded-2xl">
-                    <h3 className="text-lg font-bold mb-6 text-gray-700 text-center uppercase tracking-widest">Thumbnail Variants</h3>
-                    <div className="flex items-end gap-10">
-                        {THUMBNAIL_SIZES.map((size, index) => (
-                            <div key={size} className="flex flex-col items-center gap-3">
-                                <span className="text-xs font-bold text-gray-400">{size}x{size} px</span>
-                                {/* Fix TypeScript error in Ref callback by ensuring it returns void instead of the result of the assignment */}
-                                <ThumbnailPreview 
-                                    data={data} 
-                                    size={size} 
-                                    ref={(el) => { thumbnailRefs.current[index] = el; }} 
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-             </div>
-          </div>
+        <section className="flex-1 flex flex-col h-full bg-gray-100 overflow-hidden relative">
+           <div className="flex-1 overflow-y-auto flex flex-col items-center p-8">
+              {/* 상세페이지 프리뷰 */}
+              <div className="w-full flex flex-col items-center">
+                 <Preview data={data} ref={detailRef} />
+              </div>
+              
+              {/* 썸네일 프리뷰 (화면 아래쪽에 배치하여 저장용으로 렌더링) */}
+              <div className="mt-20 p-10 bg-white shadow-lg rounded-2xl border border-gray-200">
+                  <h3 className="text-lg font-bold mb-6 text-gray-700 text-center uppercase tracking-widest">Thumbnail Variants</h3>
+                  <div className="flex items-end gap-10 flex-wrap justify-center">
+                      {THUMBNAIL_SIZES.map((size, index) => (
+                          <div key={size} className="flex flex-col items-center gap-3">
+                              <span className="text-xs font-bold text-gray-400">{size}x{size} px</span>
+                              <ThumbnailPreview 
+                                  data={data} 
+                                  size={size} 
+                                  ref={(el) => { thumbnailRefs.current[index] = el; }} 
+                              />
+                          </div>
+                      ))}
+                  </div>
+              </div>
+           </div>
         </section>
       </main>
     </div>
