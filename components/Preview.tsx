@@ -29,13 +29,13 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
   } = data;
 
   return (
-    <div className="flex flex-col items-center bg-gray-200 p-8 overflow-y-auto h-full">
-      <div 
-        ref={ref}
-        id="detail-page-container"
-        className="bg-white shadow-2xl overflow-hidden" 
-        style={{ width: '800px', minHeight: '1200px' }}
-      >
+    <div className="flex flex-col items-center bg-white p-0 overflow-y-auto h-full">
+  <div 
+    ref={ref}
+    id="detail-page-container"
+    className="bg-white overflow-hidden" 
+    style={{ width: '800px', minHeight: '1200px' }}
+  >
         {/* Header 영역 */}
         <header className="pt-20 pb-16 px-10 text-center flex flex-col items-center">
           <h1 className="text-5xl font-black mb-4 tracking-tight" style={{ color: themeColor }}>
@@ -187,11 +187,13 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 <div className="w-full aspect-video flex items-center justify-center text-gray-300 font-bold text-2xl">FEATURE IMAGE</div>
               )}
             </div>
-            <div className="max-w-xl mx-auto text-center">
-              <p className="text-lg leading-loose text-gray-600 font-medium whitespace-pre-line">
-                {aiFeatureDesc || "메인 특징에 대한 설명이 들어가는 공간입니다."}
-              </p>
-            </div>
+          <div className="max-w-xl mx-auto text-center">
+  <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
+    {/* 1. text-gray-600 -> text-gray-800 (더 진하게) */}
+    {/* 2. font-medium -> font-semibold (더 두껍게) */}
+    {aiFeatureDesc || "메인 특징에 대한 설명이 들어가는 공간입니다."}
+  </p>
+</div>
           </div>
         </section>
 
@@ -227,7 +229,9 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
               )}
             </div>
             <div className="max-w-xl mx-auto text-center mb-10">
-              <p className="text-lg leading-loose text-gray-600 font-medium whitespace-pre-line">
+  <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
+    {/* 1. text-gray-600 -> text-gray-800 (더 진하게) */}
+    {/* 2. font-medium -> font-semibold (더 두껍게) */}
                 {aiPoint1Desc || "첫 번째 포인트에 대한 상세 설명이 들어갑니다."}
               </p>
             </div>
@@ -273,8 +277,10 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 <div className="w-full aspect-square flex items-center justify-center text-gray-200 font-bold">POINT 2 IMAGE (1)</div>
               )}
             </div>
-            <div className="max-w-xl mx-auto text-center mb-10">
-              <p className="text-lg leading-loose text-gray-600 font-medium whitespace-pre-line">
+          <div className="max-w-xl mx-auto text-center mb-10">
+  <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
+    {/* 1. text-gray-600 -> text-gray-800 (더 진하게) */}
+    {/* 2. font-medium -> font-semibold (더 두껍게) */}
                 {aiPoint2Desc || "두 번째 포인트에 대한 상세 설명이 들어갑니다."}
               </p>
             </div>
@@ -289,42 +295,51 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </div>
         </section>
 
-       {/* 사이즈 영역 */}
-        <section className="pb-32">
-          <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
-             <div 
-              className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
-              style={{ 
-                background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
-                minWidth: '320px'
-              }}
-            >
-              {productNameKr || "상품명"}
-            </div>
-            <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
-              SIZE & INFO
-            </h3>
-            <div className="flex flex-col items-center">
-              <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
-              <div className="w-px h-12 bg-gray-400"></div>
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
-            </div>
-          </div>
+      {/* 사이즈 영역 */}
+<section className="pb-32">
+  <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
+    {/* ▼▼▼ 상자 내부 수직 정렬 수정 부분 ▼▼▼ */}
+    <div 
+      className="px-20 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
+      style={{ 
+        background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
+        minWidth: '320px',
+        height: '36px' // 높이를 명시적으로 지정
+      }}
+    >
+      <span className="leading-none">{productNameKr || "상품명"}</span>
+    </div>
 
-          <div className="px-10 text-center">
-            <div className="mb-12 inline-block px-8 py-4 border-2 rounded-full" style={{ borderColor: themeColor }}>
-              <span className="text-sm font-bold text-gray-400 mr-2 uppercase">Weight</span>
-              <span className="text-2xl font-black text-gray-800">{summaryInfo.weight || "-"}</span>
-            </div>
-            <div className="w-full bg-gray-50 rounded-2xl overflow-hidden p-8">
-               {sizeImage ? (
-                <img src={sizeImage} className="w-full h-auto block" alt="Size Detail" />
-              ) : (
-                <div className="w-full py-20 flex items-center justify-center text-gray-200 font-bold">SIZE DETAIL IMAGE</div>
-              )}
-            </div>
-          </div>
-        </section>
+    <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
+      SIZE & INFO
+    </h3>
+    <div className="flex flex-col items-center">
+      <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
+      <div className="w-px h-12 bg-gray-400"></div>
+      <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+    </div>
+  </div>
+
+  <div className="px-10 text-center">
+    <div className="mb-12 inline-block px-8 py-4 border-2 rounded-full" style={{ borderColor: themeColor }}>
+      <span className="text-sm font-bold text-gray-400 mr-2 uppercase">Weight</span>
+      <span className="text-2xl font-black text-gray-800">{summaryInfo.weight || "-"}</span>
+    </div>
+    
+    <div className="w-full bg-gray-50 rounded-2xl overflow-hidden p-8 mb-6">
+       {sizeImage ? (
+        <img src={sizeImage} className="w-full h-auto block" alt="Size Detail" />
+      ) : (
+        <div className="w-full py-20 flex items-center justify-center text-gray-200 font-bold">SIZE DETAIL IMAGE</div>
+      )}
+    </div>
+
+    {/* ▼▼▼ 무게 오차 관련 고정 문구 추가 ▼▼▼ */}
+    <p className="text-sm text-gray-400 font-medium">
+      ※ 사이즈와 무게는 모두 수작업으로 측정되어 오차가 있을 수 있습니다
+    </p>
+  </div>
+</section>
         
         <footer className="py-20 bg-gray-900 text-center">
           <p className="text-gray-500 text-sm tracking-widest font-bold">ALL RIGHTS RESERVED BY BANANAMALL</p>
