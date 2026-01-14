@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import html2canvas from 'html2canvas'; // ⭐ html-to-image 대신 더 안정적인 html2canvas 사용
+import html2canvas from 'html2canvas'; 
 import { ProductData } from './types';
 import { INITIAL_PRODUCT_DATA, THUMBNAIL_SIZES } from './constants';
 import Editor from './components/Editor';
@@ -11,7 +11,6 @@ const App: React.FC = () => {
   const [data, setData] = useState<ProductData>(INITIAL_PRODUCT_DATA);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Ref 설정
   const detailRef = useRef<HTMLDivElement>(null);
   const thumbnailRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -32,7 +31,7 @@ const App: React.FC = () => {
     }
   };
 
-  // ▼▼▼ [수정됨] 상세페이지 800px 고정 + 전체 캡처 기능 ▼▼▼
+  // ▼▼▼ 상세페이지 JPG (800px 정사이즈 + 품질 1.0) 저장 기능 ▼▼▼
   const exportDetailPage = async () => {
     if (!detailRef.current) return;
     
@@ -40,26 +39,30 @@ const App: React.FC = () => {
     try {
       const element = detailRef.current;
       
-      // 스크롤 포함 전체 높이 계산
+      // 이미지가 완전히 렌더링될 수 있도록 대기
+      await new Promise(resolve => setTimeout(resolve, 800)); 
+
       const fullHeight = element.scrollHeight; 
 
       const canvas = await html2canvas(element, {
-        scale: 1,             // ⭐ 모니터 해상도 무시하고 1:1 비율 저장
-        useCORS: true,        // 이미지 깨짐 방지
-        allowTaint: true,
-        width: 800,           // ⭐ 가로 800px 강제 고정
-        height: fullHeight,   // ⭐ 세로 전체 높이 강제 지정 (잘림 방지)
-        windowWidth: 800,     // 가상 브라우저 너비
-        windowHeight: fullHeight, // 가상 브라우저 높이
+        scale: 1,             // ⭐ 가로 800px 정사이즈 유지를 위해 1배수 설정
+        useCORS: true,        
+        allowTaint: false,    // 데이터 유실 방지
+        width: 800,           
+        height: fullHeight,   
+        windowWidth: 800,     
+        windowHeight: fullHeight,
         x: 0,
         y: 0,
-        scrollY: 0,           // 스크롤 위치 초기화해서 맨 위부터 찍기
-        backgroundColor: '#ffffff'
+        scrollY: 0,
+        backgroundColor: '#ffffff' 
       });
 
-      const image = canvas.toDataURL('image/png'); // PNG 포맷 유지
+      // ⭐ 품질을 1.0(최상)으로 설정하여 1배수에서도 선명도 유지
+      const image = canvas.toDataURL('image/jpeg', 1.0); 
+      
       const link = document.createElement('a');
-      link.download = `detail_page_${data.productNameKr || 'standard'}_800px.png`;
+      link.download = `detail_page_${data.productNameKr || 'standard'}_800px.jpg`;
       link.href = image;
       link.click();
     } catch (err) {
@@ -70,7 +73,7 @@ const App: React.FC = () => {
     }
   };
 
-  // ▼▼▼ 썸네일 저장 기능 (기존 유지) ▼▼▼
+  // ▼▼▼ 썸네일 JPG 저장 기능 ▼▼▼
   const exportThumbnails = async () => {
     setIsLoading(true);
     try {
@@ -79,10 +82,10 @@ const App: React.FC = () => {
         if (ref) {
           const size = THUMBNAIL_SIZES[i];
           
-          // 썸네일도 html2canvas로 통일 (안정성 확보)
           const canvas = await html2canvas(ref, {
-            scale: 1,
+            scale: 1,         // 썸네일 정사이즈
             useCORS: true,
+            allowTaint: false,
             backgroundColor: '#ffffff',
             width: size,
             height: size,
@@ -90,13 +93,12 @@ const App: React.FC = () => {
             windowHeight: size
           });
           
-          const image = canvas.toDataURL('image/png');
+          const image = canvas.toDataURL('image/jpeg', 1.0);
           const link = document.createElement('a');
-          link.download = `thumbnail_${size}.png`;
+          link.download = `thumbnail_${size}.jpg`;
           link.href = image;
           link.click();
 
-          // 다운로드 충돌 방지 딜레이
           await new Promise(resolve => setTimeout(resolve, 300));
         }
       }
@@ -110,7 +112,6 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100 font-sans">
-      {/* Navbar (리더님이 원하시던 그 디자인 복구!) */}
       <nav className="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm z-20 sticky top-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-rose-600 rounded-lg flex items-center justify-center">
@@ -125,7 +126,7 @@ const App: React.FC = () => {
             className="px-4 py-2 border-2 border-rose-100 text-rose-600 rounded-lg font-bold hover:bg-rose-50 transition-all flex items-center gap-2 disabled:opacity-50"
           >
              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Export Thumbnail
+            Export Thumbnail (JPG)
           </button>
           <button 
             onClick={exportDetailPage}
@@ -137,16 +138,14 @@ const App: React.FC = () => {
             ) : (
               <>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Export PNG (800px)
+                Export JPG (800px)
               </>
             )}
           </button>
         </div>
       </nav>
 
-      {/* Main Content */}
       <main className="flex-1 flex overflow-hidden">
-        {/* Left: Input Editor */}
         <aside className="w-[500px] border-r h-full p-4 overflow-hidden shrink-0 bg-white z-10">
           <Editor 
             data={data} 
@@ -156,15 +155,12 @@ const App: React.FC = () => {
           />
         </aside>
 
-        {/* Right: Preview Areas */}
         <section className="flex-1 flex flex-col h-full bg-gray-100 overflow-hidden relative">
            <div className="flex-1 overflow-y-auto flex flex-col items-center p-8">
-              {/* 상세페이지 프리뷰 */}
               <div className="w-full flex flex-col items-center">
                  <Preview data={data} ref={detailRef} />
               </div>
               
-              {/* 썸네일 프리뷰 (화면 아래쪽에 배치하여 저장용으로 렌더링) */}
               <div className="mt-20 p-10 bg-white shadow-lg rounded-2xl border border-gray-200">
                   <h3 className="text-lg font-bold mb-6 text-gray-700 text-center uppercase tracking-widest">Thumbnail Variants</h3>
                   <div className="flex items-end gap-10 flex-wrap justify-center">
