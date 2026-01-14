@@ -1,0 +1,7 @@
+{
+  "name": "Standard Detail Page Auto Builder",
+  "description": "An automated e-commerce detail page and thumbnail generator with AI-powered copywriting and fixed layout templates.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

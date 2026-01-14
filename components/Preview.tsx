@@ -1,0 +1,217 @@
+
+import React, { forwardRef } from 'react';
+import { ProductData } from '../types';
+
+interface PreviewProps {
+  data: ProductData;
+}
+
+const SectionBar = ({ title, color }: { title: string, color: string }) => (
+  <div className="w-full h-16 flex items-center justify-center relative mb-12">
+    <div className="absolute inset-0 opacity-10" style={{ backgroundColor: color }}></div>
+    <div className="w-1 h-8 mr-4" style={{ backgroundColor: color }}></div>
+    <h3 className="text-2xl font-black tracking-widest text-gray-800" style={{ color: color }}>
+      {title}
+    </h3>
+    <div className="w-1 h-8 ml-4" style={{ backgroundColor: color }}></div>
+  </div>
+);
+
+const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
+  const {
+    productNameKr,
+    productNameEn,
+    themeColor,
+    mainImage,
+    packageImage,
+    featureImage,
+    point1Image1,
+    point1Image2,
+    point2Image1,
+    point2Image2,
+    sizeImage,
+    summaryInfo,
+    aiSummary,
+    aiFeatureDesc,
+    aiPoint1Desc,
+    aiPoint2Desc,
+  } = data;
+
+  return (
+    <div className="flex flex-col items-center bg-gray-200 p-8 overflow-y-auto h-full">
+      <div 
+        ref={ref}
+        id="detail-page-container"
+        className="bg-white shadow-2xl overflow-hidden" 
+        style={{ width: '800px', minHeight: '1200px' }}
+      >
+        {/* Header 영역 */}
+        <header className="pt-20 pb-16 px-10 text-center flex flex-col items-center">
+          <h1 className="text-5xl font-black mb-4 tracking-tight" style={{ color: themeColor }}>
+            {productNameKr || "상품명을 입력하세요"}
+          </h1>
+          <p className="font-montserrat text-2xl font-medium tracking-[0.2em] text-gray-400 mb-12">
+            {productNameEn || "PRODUCT ENGLISH NAME"}
+          </p>
+          <div className="w-full aspect-[4/5] bg-gray-50 flex items-center justify-center overflow-hidden">
+            {mainImage ? (
+              <img src={mainImage} className="w-full h-full object-contain p-4" alt="Main" />
+            ) : (
+              <span className="text-gray-300 font-bold text-4xl">MAIN IMAGE</span>
+            )}
+          </div>
+        </header>
+
+        {/* 정보 요약 영역 */}
+        <section className="px-10 py-20 bg-gray-50">
+          <div className="rounded-2xl overflow-hidden shadow-sm bg-white">
+            <div 
+              className="py-4 px-6 text-white font-bold text-center text-xl tracking-wider"
+              style={{ background: `linear-gradient(90deg, ${themeColor}ee, ${themeColor}cc)` }}
+            >
+              PRODUCT SPECIFICATION
+            </div>
+            <div className="grid grid-cols-2 p-8 gap-y-6">
+              {[
+                { label: '특징', value: summaryInfo.features },
+                { label: '타입', value: summaryInfo.type },
+                { label: '재질', value: summaryInfo.material },
+                { label: '치수', value: summaryInfo.dimensions },
+                { label: '무게', value: summaryInfo.weight },
+                { label: '제조사', value: summaryInfo.maker },
+              ].map((item, idx) => (
+                <div key={idx} className="flex flex-col">
+                  <span className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-tighter">{item.label}</span>
+                  <span className="text-base text-gray-800 font-medium">{item.value || '-'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-20 flex flex-col items-center">
+             <div className="w-64 aspect-square bg-white shadow-lg rounded-xl flex items-center justify-center overflow-hidden mb-8 border border-gray-100">
+              {packageImage ? (
+                <img src={packageImage} className="w-full h-full object-contain p-4" alt="Package" />
+              ) : (
+                <span className="text-gray-200 font-bold">PACKAGE IMAGE</span>
+              )}
+            </div>
+            <div className="text-center">
+              <h4 className="text-xl font-black mb-1" style={{ color: themeColor }}>{productNameKr}</h4>
+              <p className="font-montserrat text-sm font-bold text-gray-400 mb-1">{productNameEn}</p>
+              <p className="text-xs font-bold tracking-[0.3em] text-gray-300 uppercase">Package Design</p>
+            </div>
+          </div>
+        </section>
+
+        {/* 상품 핵심 요약 영역 */}
+        <section className="py-24 px-10 flex flex-col items-center text-center">
+          <div className="w-12 h-1 bg-gray-200 mb-12"></div>
+          <div className="space-y-4 max-w-2xl">
+            {aiSummary.split('\n').map((line, i) => (
+              <p key={i} className="text-2xl font-bold leading-relaxed text-gray-800" style={{ color: i % 2 === 0 ? themeColor : '#374151' }}>
+                {line || "상품의 핵심 특징이 여기에 표시됩니다."}
+              </p>
+            ))}
+          </div>
+          <div className="w-12 h-1 bg-gray-200 mt-12"></div>
+        </section>
+
+        {/* 메인 특징 영역 */}
+        <section className="pb-32">
+          <SectionBar title="MAIN FEATURES" color={themeColor} />
+          <div className="px-10">
+            <div className="w-full aspect-video bg-gray-100 mb-10 overflow-hidden rounded-lg">
+               {featureImage ? (
+                <img src={featureImage} className="w-full h-full object-cover" alt="Feature" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-300 font-bold text-2xl">FEATURE IMAGE</div>
+              )}
+            </div>
+            <div className="max-w-xl mx-auto text-center">
+              <p className="text-lg leading-loose text-gray-600 font-medium whitespace-pre-line">
+                {aiFeatureDesc || "메인 특징에 대한 설명이 들어가는 공간입니다."}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* POINT 1 영역 */}
+        <section className="pb-32">
+          <SectionBar title="POINT 01" color={themeColor} />
+          <div className="px-10">
+            <div className="w-full aspect-square bg-gray-50 mb-10 overflow-hidden">
+               {point1Image1 ? (
+                <img src={point1Image1} className="w-full h-full object-contain" alt="Point 1-1" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold">POINT 1 IMAGE (1)</div>
+              )}
+            </div>
+            <div className="max-w-xl mx-auto text-center mb-10">
+              <p className="text-lg leading-loose text-gray-600 font-medium whitespace-pre-line">
+                {aiPoint1Desc || "첫 번째 포인트에 대한 상세 설명이 들어갑니다."}
+              </p>
+            </div>
+            <div className="w-full aspect-video bg-gray-50 overflow-hidden">
+               {point1Image2 ? (
+                <img src={point1Image2} className="w-full h-full object-contain" alt="Point 1-2" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold">POINT 1 IMAGE (2)</div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* POINT 2 영역 */}
+        <section className="pb-32">
+          <SectionBar title="POINT 02" color={themeColor} />
+          <div className="px-10">
+            <div className="w-full aspect-square bg-gray-50 mb-10 overflow-hidden">
+               {point2Image1 ? (
+                <img src={point2Image1} className="w-full h-full object-contain" alt="Point 2-1" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold">POINT 2 IMAGE (1)</div>
+              )}
+            </div>
+            <div className="max-w-xl mx-auto text-center mb-10">
+              <p className="text-lg leading-loose text-gray-600 font-medium whitespace-pre-line">
+                {aiPoint2Desc || "두 번째 포인트에 대한 상세 설명이 들어갑니다."}
+              </p>
+            </div>
+            <div className="w-full aspect-video bg-gray-50 overflow-hidden">
+               {point2Image2 ? (
+                <img src={point2Image2} className="w-full h-full object-contain" alt="Point 2-2" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold">POINT 2 IMAGE (2)</div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* 사이즈 영역 */}
+        <section className="pb-32">
+          <SectionBar title="SIZE & INFO" color={themeColor} />
+          <div className="px-10 text-center">
+            <div className="mb-12 inline-block px-8 py-4 border-2 rounded-full" style={{ borderColor: themeColor }}>
+              <span className="text-sm font-bold text-gray-400 mr-2 uppercase">Weight</span>
+              <span className="text-2xl font-black text-gray-800">{summaryInfo.weight || "-"}</span>
+            </div>
+            <div className="w-full bg-gray-50 rounded-2xl overflow-hidden p-8">
+               {sizeImage ? (
+                <img src={sizeImage} className="w-full h-auto" alt="Size Detail" />
+              ) : (
+                <div className="w-full py-20 flex items-center justify-center text-gray-200 font-bold">SIZE DETAIL IMAGE</div>
+              )}
+            </div>
+          </div>
+        </section>
+        
+        <footer className="py-20 bg-gray-900 text-center">
+          <p className="text-gray-500 text-sm tracking-widest font-bold">ALL RIGHTS RESERVED BY BANANAMALL</p>
+        </footer>
+      </div>
+    </div>
+  );
+});
+
+export default Preview;
