@@ -1,6 +1,7 @@
+// components/Editor.tsx
 
 import React from 'react';
-import { ProductData, ImageType, SummaryInfo } from '../types';
+import { ProductData, ImageType, SummaryInfo, OptionItem } from '../types';
 import { COLOR_PRESETS } from '../constants';
 
 interface EditorProps {
@@ -35,6 +36,39 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
     }
   };
 
+  // ▼▼▼ [추가] 옵션 관련 핸들러들
+  const addOption = () => {
+    const newOption: OptionItem = {
+      id: Date.now().toString(), // 고유 ID 생성
+      name: '',
+      image: null
+    };
+    onChange({ ...data, options: [...data.options, newOption] });
+  };
+
+  const removeOption = (id: string) => {
+    onChange({ ...data, options: data.options.filter(opt => opt.id !== id) });
+  };
+
+  const updateOptionName = (id: string, name: string) => {
+    onChange({
+      ...data,
+      options: data.options.map(opt => opt.id === id ? { ...opt, name } : opt)
+    });
+  };
+
+  const updateOptionImage = (id: string, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      onChange({
+        ...data,
+        options: data.options.map(opt => opt.id === id ? { ...opt, image: reader.result as string } : opt)
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  // ▲▲▲ [추가 완료]
+
   const ImageInput = ({ label, type }: { label: string, type: ImageType }) => (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -52,6 +86,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 h-full overflow-y-auto space-y-8">
+      {/* 1. 기본 정보 */}
       <section>
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <span className="w-1.5 h-6 bg-rose-600 rounded-full"></span>
@@ -73,6 +108,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
         </div>
       </section>
 
+      {/* 2. 요약 정보 */}
       <section>
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <span className="w-1.5 h-6 bg-rose-600 rounded-full"></span>
@@ -88,6 +124,56 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
         </div>
       </section>
 
+      {/* 3. 옵션 정보 (새로 추가됨) */}
+      <section className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-gray-600 rounded-full"></span>
+            옵션 (선택사항)
+          </h2>
+          <button onClick={addOption} className="text-xs bg-gray-800 text-white px-3 py-1.5 rounded hover:bg-black transition-colors">
+            + 옵션 추가
+          </button>
+        </div>
+        
+        {data.options.length === 0 ? (
+           <p className="text-sm text-gray-400 text-center py-4">등록된 옵션이 없습니다.</p>
+        ) : (
+          <div className="space-y-4">
+            {data.options.map((opt, idx) => (
+              <div key={opt.id} className="bg-white p-3 rounded-lg border shadow-sm relative">
+                <button onClick={() => removeOption(opt.id)} className="absolute top-2 right-2 text-gray-400 hover:text-red-500">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <div className="mb-2">
+                  <label className="block text-xs font-bold text-gray-500 mb-1">옵션명 #{idx + 1}</label>
+                  <input 
+                    type="text" 
+                    value={opt.name} 
+                    onChange={(e) => updateOptionName(opt.id, e.target.value)} 
+                    className="w-full p-2 border rounded text-sm" 
+                    placeholder="예: 블랙 / 핑크"
+                  />
+                </div>
+                <div>
+                   <label className="block text-xs font-bold text-gray-500 mb-1">옵션 이미지</label>
+                   <div className="flex items-center gap-2">
+                     <input 
+                       type="file" 
+                       accept="image/*"
+                       onChange={(e) => e.target.files?.[0] && updateOptionImage(opt.id, e.target.files[0])}
+                       className="text-xs w-full"
+                     />
+                     {opt.image && <img src={opt.image} className="w-8 h-8 rounded border object-cover" />}
+                   </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 4. 이미지 업로드 */}
       <section>
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <span className="w-1.5 h-6 bg-rose-600 rounded-full"></span>
@@ -132,7 +218,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
         </div>
       </section>
 
-      <section className="sticky bottom-0 bg-white py-4 border-t">
+      <section className="sticky bottom-0 bg-white py-4 border-t z-10">
         <button
           onClick={onGenerateAI}
           disabled={isLoading}

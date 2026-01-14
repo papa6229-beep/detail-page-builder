@@ -1,3 +1,4 @@
+// types.ts
 
 export interface SummaryInfo {
   features: string;
@@ -8,6 +9,13 @@ export interface SummaryInfo {
   maker: string;
 }
 
+// ▼▼▼ [추가된 부분] 옵션 하나하나의 모양 정의
+export interface OptionItem {
+  id: string; // 구분을 위한 ID
+  name: string;
+  image: string | null;
+}
+
 export interface ProductData {
   productNameKr: string;
   productNameEn: string;
@@ -15,6 +23,9 @@ export interface ProductData {
   summaryInfo: SummaryInfo;
   themeColor: string;
   
+  // ▼▼▼ [추가된 부분] 옵션 리스트 (여러 개일 수 있으니까 배열로)
+  options: OptionItem[];
+
   // Images (Base64)
   mainImage: string | null;
   packageImage: string | null;

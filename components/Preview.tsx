@@ -1,3 +1,4 @@
+// components/Preview.tsx
 
 import React, { forwardRef } from 'react';
 import { ProductData } from '../types';
@@ -22,6 +23,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
     productNameKr,
     productNameEn,
     themeColor,
+    options, // [추가] 옵션 데이터 가져오기
     mainImage,
     packageImage,
     featureImage,
@@ -103,6 +105,34 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             </div>
           </div>
         </section>
+
+        {/* ▼▼▼ [추가된 부분] 옵션 섹션 (옵션이 있을 때만 보임) ▼▼▼ */}
+        {options.length > 0 && (
+          <section className="px-10 py-16 bg-white border-t border-gray-100">
+             <div className="flex items-center justify-center mb-10 gap-4">
+                <div className="h-px w-10 bg-gray-300"></div>
+                <h3 className="text-2xl font-bold tracking-wider text-gray-800 uppercase">Option Check</h3>
+                <div className="h-px w-10 bg-gray-300"></div>
+             </div>
+             
+             <div className="grid grid-cols-2 gap-8">
+               {options.map((opt) => (
+                 <div key={opt.id} className="flex flex-col items-center group">
+                    <div className="w-full aspect-square bg-gray-50 rounded-2xl overflow-hidden mb-4 border border-gray-100 flex items-center justify-center relative">
+                       {opt.image ? (
+                         <img src={opt.image} className="w-full h-full object-contain p-2 transition-transform group-hover:scale-105" alt={opt.name} />
+                       ) : (
+                         <span className="text-gray-300 font-bold text-xs">NO IMAGE</span>
+                       )}
+                       <div className="absolute inset-0 border-2 border-transparent group-hover:border-rose-100 rounded-2xl transition-colors pointer-events-none"></div>
+                    </div>
+                    <span className="font-bold text-lg text-gray-800">{opt.name}</span>
+                 </div>
+               ))}
+             </div>
+          </section>
+        )}
+        {/* ▲▲▲ [추가 완료] ▲▲▲ */}
 
         {/* 상품 핵심 요약 영역 */}
         <section className="py-24 px-10 flex flex-col items-center text-center">

@@ -1,3 +1,4 @@
+// constants.ts
 
 import { ProductData } from './types';
 
@@ -16,6 +17,10 @@ export const INITIAL_PRODUCT_DATA: ProductData = {
     maker: ''
   },
   themeColor: DEFAULT_THEME_COLOR,
+  
+  // ▼▼▼ [추가된 부분] 빈 옵션 리스트로 시작
+  options: [],
+
   mainImage: null,
   packageImage: null,
   featureImage: null,
