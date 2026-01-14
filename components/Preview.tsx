@@ -7,23 +7,12 @@ interface PreviewProps {
   data: ProductData;
 }
 
-const SectionBar = ({ title, color }: { title: string, color: string }) => (
-  <div className="w-full h-16 flex items-center justify-center relative mb-12">
-    <div className="absolute inset-0 opacity-10" style={{ backgroundColor: color }}></div>
-    <div className="w-1 h-8 mr-4" style={{ backgroundColor: color }}></div>
-    <h3 className="text-2xl font-black tracking-widest text-gray-800" style={{ color: color }}>
-      {title}
-    </h3>
-    <div className="w-1 h-8 ml-4" style={{ backgroundColor: color }}></div>
-  </div>
-);
-
 const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
   const {
     productNameKr,
     productNameEn,
     themeColor,
-    options, // [추가] 옵션 데이터 가져오기
+    options,
     mainImage,
     packageImage,
     featureImage,
@@ -55,11 +44,16 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           <p className="font-montserrat text-2xl font-medium tracking-[0.2em] text-gray-400 mb-12">
             {productNameEn || "PRODUCT ENGLISH NAME"}
           </p>
-          <div className="w-full aspect-[4/5] bg-gray-50 flex items-center justify-center overflow-hidden">
+          
+          {/* [수정 1] 메인 이미지: 고정 비율 제거 -> h-auto 적용 */}
+          <div className="w-full bg-gray-50 flex items-center justify-center overflow-hidden">
             {mainImage ? (
-              <img src={mainImage} className="w-full h-full object-contain p-4" alt="Main" />
+              <img src={mainImage} className="w-full h-auto block" alt="Main" />
             ) : (
-              <span className="text-gray-300 font-bold text-4xl">MAIN IMAGE</span>
+              // 이미지가 없을 때만 영역 확보를 위해 비율 유지
+              <div className="w-full aspect-[4/5] flex items-center justify-center">
+                <span className="text-gray-300 font-bold text-4xl">MAIN IMAGE</span>
+              </div>
             )}
           </div>
         </header>
@@ -91,11 +85,16 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </div>
 
           <div className="mt-20 flex flex-col items-center">
-             <div className="w-64 aspect-square bg-white shadow-lg rounded-xl flex items-center justify-center overflow-hidden mb-8 border border-gray-100">
+             {/* [수정 2] 패키지 이미지: 여기는 썸네일 느낌이라 정사각형 유지가 깔끔하지만, 
+                 원하시면 여기도 h-auto로 풀 수 있습니다. 일단 요청대로 고정 비율(aspect-square)은 제거하고 
+                 너비만 64(256px)로 제한하되 높이는 자동 조절되게 변경합니다. */}
+             <div className="w-64 bg-white shadow-lg rounded-xl flex items-center justify-center overflow-hidden mb-8 border border-gray-100">
               {packageImage ? (
-                <img src={packageImage} className="w-full h-full object-contain p-4" alt="Package" />
+                <img src={packageImage} className="w-full h-auto block" alt="Package" />
               ) : (
-                <span className="text-gray-200 font-bold">PACKAGE IMAGE</span>
+                <div className="w-full aspect-square flex items-center justify-center">
+                  <span className="text-gray-200 font-bold">PACKAGE IMAGE</span>
+                </div>
               )}
             </div>
             <div className="text-center">
@@ -106,7 +105,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </div>
         </section>
 
-        {/* ▼▼▼ [추가된 부분] 옵션 섹션 (옵션이 있을 때만 보임) ▼▼▼ */}
+        {/* 옵션 섹션 */}
         {options.length > 0 && (
           <section className="px-10 py-16 bg-white border-t border-gray-100">
              <div className="flex items-center justify-center mb-10 gap-4">
@@ -118,6 +117,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
              <div className="grid grid-cols-2 gap-8">
                {options.map((opt) => (
                  <div key={opt.id} className="flex flex-col items-center group">
+                    {/* 옵션은 그리드 정렬을 위해 정사각형 비율(aspect-square)을 유지하는 게 좋습니다. 
+                        (안 그러면 들쑥날쑥해짐) 하지만 꽉 채우기 위해 object-cover를 쓸 수 있습니다. */}
                     <div className="w-full aspect-square bg-gray-50 rounded-2xl overflow-hidden mb-4 border border-gray-100 flex items-center justify-center relative">
                        {opt.image ? (
                          <img src={opt.image} className="w-full h-full object-contain p-2 transition-transform group-hover:scale-105" alt={opt.name} />
@@ -132,14 +133,21 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
              </div>
           </section>
         )}
-        {/* ▲▲▲ [추가 완료] ▲▲▲ */}
 
-        {/* 상품 핵심 요약 영역 */}
+{/* 상품 핵심 요약 영역 */}
         <section className="py-24 px-10 flex flex-col items-center text-center">
           <div className="w-12 h-1 bg-gray-200 mb-12"></div>
           <div className="space-y-4 max-w-2xl">
             {aiSummary.split('\n').map((line, i) => (
-              <p key={i} className="text-2xl font-bold leading-relaxed text-gray-800" style={{ color: i % 2 === 0 ? themeColor : '#374151' }}>
+              <p 
+                key={i} 
+                // ▼▼▼ 수정된 부분 ▼▼▼
+                // 1. text-2xl -> text-3xl (글자 키움)
+                // 2. font-bold -> font-black (가장 두껍게)
+                // 3. tracking-tight (자간을 좁혀서 더 꽉 차 보이게)
+                className="text-3xl font-black leading-relaxed tracking-tight" 
+                style={{ color: i % 2 === 0 ? themeColor : '#374151' }}
+              >
                 {line || "상품의 핵심 특징이 여기에 표시됩니다."}
               </p>
             ))}
@@ -149,9 +157,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
         {/* 메인 특징 영역 */}
         <section className="pb-32">
-          {/* ▼▼▼ 여기부터 커스텀 헤더 디자인 시작 (이 부분만 다름) ▼▼▼ */}
+          {/* 헤더 부분 */}
           <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
-            {/* 1. 그라데이션 바 (상품명 한글) */}
             <div 
               className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
               style={{ 
@@ -161,27 +168,23 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             >
               {productNameKr || "상품명"}
             </div>
-
-            {/* 2. 메인 타이틀 (MAIN FEATURES) */}
             <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
               특징
             </h3>
-
-            {/* 3. Check! 및 세로선 장식 */}
             <div className="flex flex-col items-center">
               <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
               <div className="w-px h-12 bg-gray-400"></div>
               <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
             </div>
           </div>
-          {/* ▲▲▲ 커스텀 헤더 디자인 끝 ▲▲▲ */}
 
           <div className="px-10">
-            <div className="w-full aspect-video bg-gray-100 mb-10 overflow-hidden rounded-lg">
+            {/* [수정 3] Feature Image: aspect-video 제거 -> h-auto */}
+            <div className="w-full bg-gray-100 mb-10 overflow-hidden rounded-lg">
                {featureImage ? (
-                <img src={featureImage} className="w-full h-full object-cover" alt="Feature" />
+                <img src={featureImage} className="w-full h-auto block" alt="Feature" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-300 font-bold text-2xl">FEATURE IMAGE</div>
+                <div className="w-full aspect-video flex items-center justify-center text-gray-300 font-bold text-2xl">FEATURE IMAGE</div>
               )}
             </div>
             <div className="max-w-xl mx-auto text-center">
@@ -194,7 +197,6 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
         {/* POINT 1 영역 */}
         <section className="pb-32">
-          {/* ▼▼▼ POINT 1 전용 커스텀 디자인 헤더 ▼▼▼ */}
           <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
             <div 
               className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
@@ -205,25 +207,23 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             >
               {productNameKr || "상품명"}
             </div>
-
             <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
               POINT 01
             </h3>
-
             <div className="flex flex-col items-center">
               <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
               <div className="w-px h-12 bg-gray-400"></div>
               <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
             </div>
           </div>
-          {/* ▲▲▲ 헤더 끝 ▲▲▲ */}
 
           <div className="px-10">
-            <div className="w-full aspect-square bg-gray-50 mb-10 overflow-hidden">
+            {/* [수정 4] Point 1 Image 1: aspect-square 제거 */}
+            <div className="w-full bg-gray-50 mb-10 overflow-hidden">
                {point1Image1 ? (
-                <img src={point1Image1} className="w-full h-full object-contain" alt="Point 1-1" />
+                <img src={point1Image1} className="w-full h-auto block" alt="Point 1-1" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold">POINT 1 IMAGE (1)</div>
+                <div className="w-full aspect-square flex items-center justify-center text-gray-200 font-bold">POINT 1 IMAGE (1)</div>
               )}
             </div>
             <div className="max-w-xl mx-auto text-center mb-10">
@@ -231,11 +231,12 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 {aiPoint1Desc || "첫 번째 포인트에 대한 상세 설명이 들어갑니다."}
               </p>
             </div>
-            <div className="w-full aspect-video bg-gray-50 overflow-hidden">
+            {/* [수정 5] Point 1 Image 2: aspect-video 제거 */}
+            <div className="w-full bg-gray-50 overflow-hidden">
                {point1Image2 ? (
-                <img src={point1Image2} className="w-full h-full object-contain" alt="Point 1-2" />
+                <img src={point1Image2} className="w-full h-auto block" alt="Point 1-2" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold">POINT 1 IMAGE (2)</div>
+                <div className="w-full aspect-video flex items-center justify-center text-gray-200 font-bold">POINT 1 IMAGE (2)</div>
               )}
             </div>
           </div>
@@ -243,9 +244,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
         {/* POINT 2 영역 */}
         <section className="pb-32">
-          {/* ▼▼▼ POINT 2 전용 커스텀 디자인 헤더 ▼▼▼ */}
           <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
-            <div 
+             <div 
               className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
               style={{ 
                 background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
@@ -254,25 +254,23 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             >
               {productNameKr || "상품명"}
             </div>
-
             <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
               POINT 02
             </h3>
-
             <div className="flex flex-col items-center">
               <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
               <div className="w-px h-12 bg-gray-400"></div>
               <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
             </div>
           </div>
-          {/* ▲▲▲ 헤더 끝 ▲▲▲ */}
 
           <div className="px-10">
-            <div className="w-full aspect-square bg-gray-50 mb-10 overflow-hidden">
+             {/* [수정 6] Point 2 Image 1: aspect-square 제거 */}
+            <div className="w-full bg-gray-50 mb-10 overflow-hidden">
                {point2Image1 ? (
-                <img src={point2Image1} className="w-full h-full object-contain" alt="Point 2-1" />
+                <img src={point2Image1} className="w-full h-auto block" alt="Point 2-1" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold">POINT 2 IMAGE (1)</div>
+                <div className="w-full aspect-square flex items-center justify-center text-gray-200 font-bold">POINT 2 IMAGE (1)</div>
               )}
             </div>
             <div className="max-w-xl mx-auto text-center mb-10">
@@ -280,11 +278,12 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 {aiPoint2Desc || "두 번째 포인트에 대한 상세 설명이 들어갑니다."}
               </p>
             </div>
-            <div className="w-full aspect-video bg-gray-50 overflow-hidden">
+             {/* [수정 7] Point 2 Image 2: aspect-video 제거 */}
+            <div className="w-full bg-gray-50 overflow-hidden">
                {point2Image2 ? (
-                <img src={point2Image2} className="w-full h-full object-contain" alt="Point 2-2" />
+                <img src={point2Image2} className="w-full h-auto block" alt="Point 2-2" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold">POINT 2 IMAGE (2)</div>
+                <div className="w-full aspect-video flex items-center justify-center text-gray-200 font-bold">POINT 2 IMAGE (2)</div>
               )}
             </div>
           </div>
@@ -292,9 +291,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
        {/* 사이즈 영역 */}
         <section className="pb-32">
-          {/* ▼▼▼ SIZE & INFO 전용 커스텀 디자인 헤더 ▼▼▼ */}
           <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
-            <div 
+             <div 
               className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
               style={{ 
                 background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
@@ -303,18 +301,15 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             >
               {productNameKr || "상품명"}
             </div>
-
             <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
               SIZE & INFO
             </h3>
-
             <div className="flex flex-col items-center">
               <span className="font-serif text-2xl font-bold italic text-gray-600 mb-3 tracking-wide">Check!</span>
               <div className="w-px h-12 bg-gray-400"></div>
               <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
             </div>
           </div>
-          {/* ▲▲▲ 헤더 끝 ▲▲▲ */}
 
           <div className="px-10 text-center">
             <div className="mb-12 inline-block px-8 py-4 border-2 rounded-full" style={{ borderColor: themeColor }}>
@@ -323,7 +318,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             </div>
             <div className="w-full bg-gray-50 rounded-2xl overflow-hidden p-8">
                {sizeImage ? (
-                <img src={sizeImage} className="w-full h-auto" alt="Size Detail" />
+                <img src={sizeImage} className="w-full h-auto block" alt="Size Detail" />
               ) : (
                 <div className="w-full py-20 flex items-center justify-center text-gray-200 font-bold">SIZE DETAIL IMAGE</div>
               )}
