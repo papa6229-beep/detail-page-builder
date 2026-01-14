@@ -31,49 +31,36 @@ const App: React.FC = () => {
     }
   };
 
-  // ▼▼▼ 상세페이지 JPG (800px 정사이즈 + 품질 1.0) 저장 기능 ▼▼▼
   const exportDetailPage = async () => {
     if (!detailRef.current) return;
-    
     setIsLoading(true);
     try {
       const element = detailRef.current;
-      
-      // 이미지가 완전히 렌더링될 수 있도록 대기
       await new Promise(resolve => setTimeout(resolve, 800)); 
-
       const fullHeight = element.scrollHeight; 
-
       const canvas = await html2canvas(element, {
-        scale: 1,             // ⭐ 가로 800px 정사이즈 유지를 위해 1배수 설정
-        useCORS: true,        
-        allowTaint: false,    // 데이터 유실 방지
-        width: 800,           
-        height: fullHeight,   
-        windowWidth: 800,     
+        scale: 1,
+        useCORS: true,
+        allowTaint: false,
+        width: 800,
+        height: fullHeight,
+        windowWidth: 800,
         windowHeight: fullHeight,
-        x: 0,
-        y: 0,
-        scrollY: 0,
+        x: 0, y: 0, scrollY: 0,
         backgroundColor: '#ffffff' 
       });
-
-      // ⭐ 품질을 1.0(최상)으로 설정하여 1배수에서도 선명도 유지
       const image = canvas.toDataURL('image/jpeg', 1.0); 
-      
       const link = document.createElement('a');
-      link.download = `detail_page_${data.productNameKr || 'standard'}_800px.jpg`;
+      link.download = `detail_page_${data.productNameKr || 'standard'}.jpg`;
       link.href = image;
       link.click();
     } catch (err) {
       console.error('Export failed', err);
-      alert('상세페이지 저장 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ▼▼▼ 썸네일 JPG 저장 기능 ▼▼▼
   const exportThumbnails = async () => {
     setIsLoading(true);
     try {
@@ -81,72 +68,50 @@ const App: React.FC = () => {
         const ref = thumbnailRefs.current[i];
         if (ref) {
           const size = THUMBNAIL_SIZES[i];
-          
           const canvas = await html2canvas(ref, {
-            scale: 1,         // 썸네일 정사이즈
-            useCORS: true,
-            allowTaint: false,
-            backgroundColor: '#ffffff',
-            width: size,
-            height: size,
-            windowWidth: size,
-            windowHeight: size
+            scale: 1, useCORS: true, backgroundColor: '#ffffff',
+            width: size, height: size, windowWidth: size, windowHeight: size
           });
-          
           const image = canvas.toDataURL('image/jpeg', 1.0);
           const link = document.createElement('a');
           link.download = `thumbnail_${size}.jpg`;
           link.href = image;
           link.click();
-
           await new Promise(resolve => setTimeout(resolve, 300));
         }
       }
     } catch (err) {
-      console.error('Thumbnail export failed', err);
-      alert('썸네일 저장 중 오류가 발생했습니다.');
+      alert('썸네일 저장 중 오류 발생');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 font-sans">
-      <nav className="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm z-20 sticky top-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-rose-600 rounded-lg flex items-center justify-center">
-             <span className="text-white font-black text-xl">B</span>
+    <div className="min-h-screen flex flex-col bg-gray-100 font-sans overflow-x-hidden">
+      {/* 📱 반응형 네비게이션 */}
+      <nav className="bg-white border-b px-4 py-3 flex flex-col md:flex-row items-center justify-between shadow-sm z-30 sticky top-0 gap-3">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="w-8 h-8 bg-rose-600 rounded flex items-center justify-center shrink-0">
+             <span className="text-white font-black text-lg">B</span>
           </div>
-          <h1 className="text-xl font-black text-gray-800 tracking-tight">상세페이지 빌더 <span className="text-gray-400 font-medium text-sm ml-2">v3.0</span></h1>
+          <h1 className="text-base font-black text-gray-800 truncate">상세페이지 빌더 v3.0</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={exportThumbnails}
-            disabled={isLoading}
-            className="px-4 py-2 border-2 border-rose-100 text-rose-600 rounded-lg font-bold hover:bg-rose-50 transition-all flex items-center gap-2 disabled:opacity-50"
-          >
-             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Export Thumbnail (JPG)
+        
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <button onClick={exportThumbnails} className="flex-1 md:flex-none px-3 py-2 border border-rose-200 text-rose-600 rounded-lg font-bold text-xs whitespace-nowrap">
+            Thumbnail
           </button>
-          <button 
-            onClick={exportDetailPage}
-            disabled={isLoading}
-            className="px-6 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 shadow-md active:scale-95 transition-all flex items-center gap-2 disabled:bg-gray-400"
-          >
-            {isLoading ? (
-               <span>처리중...</span>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Export JPG (800px)
-              </>
-            )}
+          <button onClick={exportDetailPage} className="flex-1 md:flex-none px-3 py-2 bg-rose-600 text-white rounded-lg font-bold text-xs shadow-md whitespace-nowrap">
+            Export JPG
           </button>
         </div>
       </nav>
 
-      <main className="flex-1 flex overflow-hidden">
-        <aside className="w-[500px] border-r h-full p-4 overflow-hidden shrink-0 bg-white z-10">
+      {/* 📱 메인 레이아웃: 모바일(Column) / 데스크톱(Row) */}
+      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* 에디터 영역: 모바일에서는 상단에 위치하고 높이를 제한하여 프리뷰를 볼 수 있게 함 */}
+        <aside className="w-full lg:w-[400px] xl:w-[480px] border-b lg:border-r h-[50vh] lg:h-full overflow-y-auto bg-white z-20 shrink-0">
           <Editor 
             data={data} 
             onChange={setData} 
@@ -155,23 +120,24 @@ const App: React.FC = () => {
           />
         </aside>
 
-        <section className="flex-1 flex flex-col h-full bg-gray-100 overflow-hidden relative">
-           <div className="flex-1 overflow-y-auto flex flex-col items-center p-8">
-              <div className="w-full flex flex-col items-center">
+        {/* 프리뷰 영역: 남은 공간을 차지 */}
+        <section className="flex-1 bg-gray-200 overflow-y-auto relative p-4 md:p-8">
+           <div className="flex flex-col items-center min-w-min">
+              {/* 실제 800px 결과물을 모바일 화면 크기에 맞게 축소해서 보여주는 컨테이너 */}
+              <div className="max-w-full overflow-x-auto lg:overflow-visible shadow-2xl rounded-lg overflow-hidden origin-top scale-[0.5] sm:scale-[0.7] md:scale-100">
                  <Preview data={data} ref={detailRef} />
               </div>
               
-              <div className="mt-20 p-10 bg-white shadow-lg rounded-2xl border border-gray-200">
-                  <h3 className="text-lg font-bold mb-6 text-gray-700 text-center uppercase tracking-widest">Thumbnail Variants</h3>
-                  <div className="flex items-end gap-10 flex-wrap justify-center">
+              {/* 썸네일 영역 */}
+              <div className="mt-12 p-6 bg-white shadow-lg rounded-2xl border border-gray-200 w-full max-w-[800px]">
+                  <h3 className="text-sm font-bold mb-6 text-gray-400 text-center uppercase tracking-widest">Thumbnail Variants</h3>
+                  <div className="flex items-center gap-6 flex-wrap justify-center">
                       {THUMBNAIL_SIZES.map((size, index) => (
-                          <div key={size} className="flex flex-col items-center gap-3">
-                              <span className="text-xs font-bold text-gray-400">{size}x{size} px</span>
-                              <ThumbnailPreview 
-                                  data={data} 
-                                  size={size} 
-                                  ref={(el) => { thumbnailRefs.current[index] = el; }} 
-                              />
+                          <div key={size} className="flex flex-col items-center gap-2">
+                              <span className="text-[10px] font-bold text-gray-400">{size}px</span>
+                              <div className="scale-75 origin-top">
+                                <ThumbnailPreview data={data} size={size} ref={(el) => { thumbnailRefs.current[index] = el; }} />
+                              </div>
                           </div>
                       ))}
                   </div>
