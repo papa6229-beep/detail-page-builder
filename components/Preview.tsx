@@ -201,13 +201,14 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         <section className="pb-32">
           <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
             <div 
-              className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
+              className="px-20 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
               style={{ 
                 background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
-                minWidth: '320px'
+                minWidth: '320px',
+                height: '36px'
               }}
             >
-              {productNameKr || "상품명"}
+              <span className="leading-none">{productNameKr || "상품명"}</span>
             </div>
             <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
               POINT 01
@@ -220,7 +221,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </div>
 
           <div className="px-10">
-            {/* [수정 4] Point 1 Image 1: aspect-square 제거 */}
+            {/* 1. 이미지 1 */}
             <div className="w-full bg-gray-50 mb-10 overflow-hidden">
                {point1Image1 ? (
                 <img src={point1Image1} className="w-full h-auto block" alt="Point 1-1" />
@@ -228,14 +229,13 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 <div className="w-full aspect-square flex items-center justify-center text-gray-200 font-bold">POINT 1 IMAGE (1)</div>
               )}
             </div>
-            <div className="max-w-xl mx-auto text-center mb-10">
-  <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
-    {/* 1. text-gray-600 -> text-gray-800 (더 진하게) */}
-    {/* 2. font-medium -> font-semibold (더 두껍게) */}
+            {/* 2. 설명 1 (간격 mb-20으로 확장) */}
+            <div className="max-w-xl mx-auto text-center mb-20">
+              <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
                 {aiPoint1Desc || "첫 번째 포인트에 대한 상세 설명이 들어갑니다."}
               </p>
             </div>
-            {/* [수정 5] Point 1 Image 2: aspect-video 제거 */}
+            {/* 3. 이미지 2 */}
             <div className="w-full bg-gray-50 overflow-hidden">
                {point1Image2 ? (
                 <img src={point1Image2} className="w-full h-auto block" alt="Point 1-2" />
@@ -243,20 +243,42 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 <div className="w-full aspect-video flex items-center justify-center text-gray-200 font-bold">POINT 1 IMAGE (2)</div>
               )}
             </div>
+
+            {/* 확장 구조: 설명2, 이미지3, 설명3 (데이터 있을 때만 노출) */}
+            {(data as any).aiPoint1Desc2 && (
+              <div className="max-w-xl mx-auto text-center mt-20 mb-20">
+                <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
+                  {(data as any).aiPoint1Desc2}
+                </p>
+              </div>
+            )}
+            {(data as any).point1Image3 && (
+              <div className="w-full bg-gray-50 mb-20 overflow-hidden">
+                <img src={(data as any).point1Image3} className="w-full h-auto block" alt="Point 1-3" />
+              </div>
+            )}
+            {(data as any).aiPoint1Desc3 && (
+              <div className="max-w-xl mx-auto text-center mt-10">
+                <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
+                  {(data as any).aiPoint1Desc3}
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
         {/* POINT 2 영역 */}
         <section className="pb-32">
           <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
-             <div 
-              className="px-20 py-1.5 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
+            <div 
+              className="px-20 mb-5 text-white font-bold text-sm tracking-widest flex items-center justify-center"
               style={{ 
                 background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
-                minWidth: '320px'
+                minWidth: '320px',
+                height: '36px'
               }}
             >
-              {productNameKr || "상품명"}
+              <span className="leading-none">{productNameKr || "상품명"}</span>
             </div>
             <h3 className="text-4xl font-black tracking-tight text-gray-800 mb-2 uppercase scale-y-110">
               POINT 02
@@ -269,7 +291,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </div>
 
           <div className="px-10">
-             {/* [수정 6] Point 2 Image 1: aspect-square 제거 */}
+            {/* 1. 이미지 1 */}
             <div className="w-full bg-gray-50 mb-10 overflow-hidden">
                {point2Image1 ? (
                 <img src={point2Image1} className="w-full h-auto block" alt="Point 2-1" />
@@ -277,14 +299,13 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 <div className="w-full aspect-square flex items-center justify-center text-gray-200 font-bold">POINT 2 IMAGE (1)</div>
               )}
             </div>
-          <div className="max-w-xl mx-auto text-center mb-10">
-  <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
-    {/* 1. text-gray-600 -> text-gray-800 (더 진하게) */}
-    {/* 2. font-medium -> font-semibold (더 두껍게) */}
+            {/* 2. 설명 1 (간격 mb-20으로 확장) */}
+            <div className="max-w-xl mx-auto text-center mb-20">
+              <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
                 {aiPoint2Desc || "두 번째 포인트에 대한 상세 설명이 들어갑니다."}
               </p>
             </div>
-             {/* [수정 7] Point 2 Image 2: aspect-video 제거 */}
+            {/* 3. 이미지 2 */}
             <div className="w-full bg-gray-50 overflow-hidden">
                {point2Image2 ? (
                 <img src={point2Image2} className="w-full h-auto block" alt="Point 2-2" />
@@ -292,6 +313,27 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 <div className="w-full aspect-video flex items-center justify-center text-gray-200 font-bold">POINT 2 IMAGE (2)</div>
               )}
             </div>
+
+            {/* 확장 구조: 설명2, 이미지3, 설명3 (데이터 있을 때만 노출) */}
+            {(data as any).aiPoint2Desc2 && (
+              <div className="max-w-xl mx-auto text-center mt-20 mb-20">
+                <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
+                  {(data as any).aiPoint2Desc2}
+                </p>
+              </div>
+            )}
+            {(data as any).point2Image3 && (
+              <div className="w-full bg-gray-50 mb-20 overflow-hidden">
+                <img src={(data as any).point2Image3} className="w-full h-auto block" alt="Point 2-3" />
+              </div>
+            )}
+            {(data as any).aiPoint2Desc3 && (
+              <div className="max-w-xl mx-auto text-center mt-10">
+                <p className="text-lg leading-loose text-gray-800 font-semibold whitespace-pre-line">
+                  {(data as any).aiPoint2Desc3}
+                </p>
+              </div>
+            )}
           </div>
         </section>
 

@@ -9,9 +9,8 @@ export interface SummaryInfo {
   maker: string;
 }
 
-// ▼▼▼ [추가된 부분] 옵션 하나하나의 모양 정의
 export interface OptionItem {
-  id: string; // 구분을 위한 ID
+  id: string;
   name: string;
   image: string | null;
 }
@@ -22,26 +21,39 @@ export interface ProductData {
   brandName: string;
   summaryInfo: SummaryInfo;
   themeColor: string;
-  
-  // ▼▼▼ [추가된 부분] 옵션 리스트 (여러 개일 수 있으니까 배열로)
   options: OptionItem[];
 
   // Images (Base64)
   mainImage: string | null;
   packageImage: string | null;
   featureImage: string | null;
+  
+  // POINT 1 Images
   point1Image1: string | null;
   point1Image2: string | null;
+  point1Image3?: string | null; // [추가] 선택형 이미지 3
+
+  // POINT 2 Images
   point2Image1: string | null;
   point2Image2: string | null;
+  point2Image3?: string | null; // [추가] 선택형 이미지 3
+
   sizeImage: string | null;
   thumbnailImage: string | null;
 
   // AI Generated Text
   aiSummary: string;
   aiFeatureDesc: string;
+  
+  // POINT 1 Descriptions
   aiPoint1Desc: string;
+  aiPoint1Desc2?: string; // [추가] 선택형 설명 2
+  aiPoint1Desc3?: string; // [추가] 선택형 설명 3
+
+  // POINT 2 Descriptions
   aiPoint2Desc: string;
+  aiPoint2Desc2?: string; // [추가] 선택형 설명 2
+  aiPoint2Desc3?: string; // [추가] 선택형 설명 3
 }
 
 export enum ImageType {
@@ -50,8 +62,10 @@ export enum ImageType {
   FEATURE = 'featureImage',
   POINT1_1 = 'point1Image1',
   POINT1_2 = 'point1Image2',
+  POINT1_3 = 'point1Image3', // [추가]
   POINT2_1 = 'point2Image1',
   POINT2_2 = 'point2Image2',
+  POINT2_3 = 'point2Image3', // [추가]
   SIZE = 'sizeImage',
   THUMBNAIL = 'thumbnailImage'
 }
