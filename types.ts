@@ -1,12 +1,13 @@
 // types.ts
 
 export interface SummaryInfo {
-  features: string;
-  type: string;
-  material: string;
-  dimensions: string;
-  weight: string;
-  maker: string;
+  feature: string;   // 특징
+  type: string;      // 타입
+  material: string;  // 재질
+  size: string;      // 치수
+  weight: string;    // 무게
+  power: string;     // 전원타입
+  maker: string;     // 제조사 / 브랜드
 }
 
 export interface OptionItem {

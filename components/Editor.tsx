@@ -124,12 +124,29 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
       </section>
 
       {/* 요약 정보 */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">요약 정보</h2>
-        {(['features', 'type', 'material', 'dimensions', 'weight', 'maker'] as const).map(k => (
-          <input key={k} name={`summary_${k}`} value={data.summaryInfo[k]} onChange={handleInputChange} className="w-full p-2 border rounded mb-2" placeholder={k} />
-        ))}
-      </section>
+<section>
+  <h2 className="text-xl font-bold mb-4">요약 정보</h2>
+
+  {([
+    { key: 'feature', label: '특징' },
+    { key: 'type', label: '타입' },
+    { key: 'material', label: '재질' },
+    { key: 'size', label: '치수' },
+    { key: 'weight', label: '무게' },
+    { key: 'power', label: '전원타입' },
+    { key: 'maker', label: '제조사' },
+  ] as const).map(item => (
+    <input
+      key={item.key}
+      name={`summary_${item.key}`}
+      value={data.summaryInfo[item.key]}
+      onChange={handleInputChange}
+      className="w-full p-2 border rounded mb-2"
+      placeholder={item.label}
+    />
+  ))}
+</section>
+
 
       {/* 핵심 특징 */}
       <section>

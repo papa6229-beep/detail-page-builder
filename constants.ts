@@ -9,12 +9,13 @@ export const INITIAL_PRODUCT_DATA: ProductData = {
   productNameEn: '',
   brandName: '',
   summaryInfo: {
-    features: '',
+    feature: '',
     type: '',
     material: '',
-    dimensions: '',
+    size: '',
     weight: '',
-    maker: ''
+    power: '',
+    maker: '',
   },
   themeColor: DEFAULT_THEME_COLOR,
   
@@ -37,12 +38,34 @@ export const INITIAL_PRODUCT_DATA: ProductData = {
 };
 
 export const COLOR_PRESETS = [
-  { label: 'Rose', value: '#E11D48' },
-  { label: 'Violet', value: '#7C3AED' },
-  { label: 'Blue', value: '#2563EB' },
-  { label: 'Green', value: '#10B981' },
-  { label: 'Orange', value: '#EA580C' },
-  { label: 'Black', value: '#1F2937' },
+  // 단색
+  { type: 'solid', value: '#111111' },
+  { type: 'solid', value: '#e11d48' },
+  { type: 'solid', value: '#2563eb' },
+  { type: 'solid', value: '#16a34a' },
+  { type: 'solid', value: '#f59e0b' }, // 진한 옐로우
+
+  // 그라데이션
+  {
+    type: 'gradient',
+    value: 'linear-gradient(90deg, #facc15, #f59e0b)', // 옐로우 → 오렌지
+  },
+  {
+    type: 'gradient',
+    value: 'linear-gradient(90deg, #fde047, #f97316)', // 라이트 옐로우 → 딥 오렌지
+  },
+  {
+    type: 'gradient',
+    value: 'linear-gradient(90deg, #fbbf24, #dc2626)', // 옐로우 → 레드
+  },
+  {
+    type: 'gradient',
+    value: 'linear-gradient(90deg, #22c55e, #16a34a)', // 그린
+  },
+  {
+    type: 'gradient',
+    value: 'linear-gradient(90deg, #3b82f6, #1e3a8a)', // 블루
+  },
 ];
 
 export const THUMBNAIL_SIZES = [202, 400, 500];

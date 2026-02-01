@@ -65,22 +65,28 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             >
               PRODUCT SPECIFICATION
             </div>
-            <div className="grid grid-cols-2 p-10 gap-y-10 border-t border-gray-50">
-              {[
-                { label: '특징', value: summaryInfo.features },
-                { label: '타입', value: summaryInfo.type },
-                { label: '재질', value: summaryInfo.material },
-                { label: '치수', value: summaryInfo.dimensions },
-                { label: '무게', value: summaryInfo.weight },
-                { label: '제조사', value: summaryInfo.maker },
-              ].map((item, idx) => (
-                <div key={idx} className="flex flex-col">
-                  {/* 라벨 크기 소폭 조정 (text-2xl -> text-xl) */}
-                  <span className="text-xl font-black text-gray-400 mb-2 uppercase tracking-tighter">{item.label}</span>
-                  {/* 내용 크기 소폭 조정 (text-3xl -> text-2xl) */}
-                  <span className="text-2xl text-gray-800 font-black">{item.value || '-'}</span>
-                </div>
-              ))}
+<div className="p-10 border-t border-gray-100">
+  {[
+  { label: '특징', value: summaryInfo.feature },
+  { label: '타입', value: summaryInfo.type },
+  { label: '재질', value: summaryInfo.material },
+  { label: '치수', value: summaryInfo.size },
+  { label: '무게', value: summaryInfo.weight },
+  { label: '전원타입', value: summaryInfo.power },
+  { label: '제조사', value: summaryInfo.maker },
+].map((item, idx) => (
+    <div
+      key={idx}
+      className="grid grid-cols-[120px_1fr] gap-4 py-4 border-b last:border-b-0"
+    >
+      <div className="text-sm font-bold text-gray-400">
+        {item.label}
+      </div>
+      <div className="text-sm font-semibold text-gray-800 leading-relaxed whitespace-pre-line">
+        {item.value || '-'}
+      </div>
+    </div>
+  ))}
             </div>
           </div>
 
