@@ -221,13 +221,16 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 {aiPoint1Desc || "첫 번째 포인트에 대한 상세 설명이 들어갑니다."}
               </p>
             </div>
-            <div className="w-full bg-gray-50 overflow-hidden">
-               {point1Image2 ? (
-                <img src={point1Image2} className="w-full h-auto block" alt="Point 1-2" />
-              ) : (
-                <div className="w-full aspect-video flex items-center justify-center text-gray-200 font-bold text-3xl">POINT 1 IMAGE (2)</div>
-              )}
-            </div>
+{point1Image2 && (
+  <div className="w-full bg-gray-50 overflow-hidden mb-20">
+    <img
+      src={point1Image2}
+      className="w-full h-auto block"
+      alt="Point 1-2"
+    />
+  </div>
+)}
+
 
             {/* 확장 구조 */}
             {(data as any).aiPoint1Desc2 && (
@@ -238,86 +241,111 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
               </div>
             )}
             {(data as any).point1Image3 && (
-              <div className="w-full bg-gray-50 mb-20 overflow-hidden">
-                <img src={(data as any).point1Image3} className="w-full h-auto block" alt="Point 1-3" />
-              </div>
-            )}
-            {(data as any).aiPoint1Desc3 && (
-              <div className="max-w-3xl mx-auto text-center mt-12">
-                <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-                  {(data as any).aiPoint1Desc3}
-                </p>
-              </div>
-            )}
+  <div className="w-full bg-gray-50 mb-12 overflow-hidden">
+    <img
+      src={(data as any).point1Image3}
+      className="w-full h-auto block"
+      alt="Point 1-3"
+    />
+  </div>
+)}
+
+{(data as any).aiPoint1Desc3 && (
+  <div className="max-w-3xl mx-auto text-center mt-0 mb-20">
+    <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
+      {(data as any).aiPoint1Desc3}
+    </p>
+  </div>
+)}
           </div>
         </section>
 
-        {/* POINT 2 영역 */}
-        <section className="pb-32">
-          <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
-            <div 
-              className="px-16 mb-6 text-white font-bold tracking-widest flex items-center justify-center"
-              style={{ 
-                background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
-                minWidth: '360px',
-                height: '48px'
-              }}
-            >
-              <span className="leading-none text-xl">{productNameKr || "상품명"}</span>
-            </div>
-            <h3 className="text-5xl font-black tracking-tight text-gray-800 mb-4 uppercase scale-y-110">
-              POINT 02
-            </h3>
-            <div className="flex flex-col items-center">
-              <span className="font-serif text-3xl font-bold italic text-gray-600 mb-4 tracking-wide">Check!</span>
-              <div className="w-1 h-16 bg-gray-400"></div>
-              <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-            </div>
-          </div>
+        {/* POINT 2 영역 (조건부 전체) */}
+{(
+  point2Image1 ||
+  aiPoint2Desc ||
+  (data as any).point2Image2 ||
+  (data as any).aiPoint2Desc2 ||
+  (data as any).point2Image3 ||
+  (data as any).aiPoint2Desc3
+) && (
+<section className="pb-32">
 
-          <div className="px-10">
-            <div className="w-full bg-gray-50 mb-12 overflow-hidden">
-               {point2Image1 ? (
-                <img src={point2Image1} className="w-full h-auto block" alt="Point 2-1" />
-              ) : (
-                <div className="w-full aspect-square flex items-center justify-center text-gray-200 font-bold text-3xl">POINT 2 IMAGE (1)</div>
-              )}
-            </div>
-            <div className="max-w-3xl mx-auto text-center mb-20">
-              <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-                {aiPoint2Desc || "두 번째 포인트에 대한 상세 설명이 들어갑니다."}
-              </p>
-            </div>
-            <div className="w-full bg-gray-50 overflow-hidden">
-               {point2Image2 ? (
-                <img src={point2Image2} className="w-full h-auto block" alt="Point 2-2" />
-              ) : (
-                <div className="w-full aspect-video flex items-center justify-center text-gray-200 font-bold text-3xl">POINT 2 IMAGE (2)</div>
-              )}
-            </div>
+  {/* POINT 2 디자인 헤더 (조건부) */}
+  <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
+    <div
+      className="px-16 mb-6 text-white font-bold tracking-widest flex items-center justify-center"
+      style={{
+        background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
+        minWidth: '360px',
+        height: '48px'
+      }}
+    >
+      <span className="leading-none text-xl">{productNameKr || "상품명"}</span>
+    </div>
 
-            {/* 확장 구조 */}
-            {(data as any).aiPoint2Desc2 && (
-              <div className="max-w-3xl mx-auto text-center mt-20 mb-20">
-                <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-                  {(data as any).aiPoint2Desc2}
-                </p>
-              </div>
-            )}
-            {(data as any).point2Image3 && (
-              <div className="w-full bg-gray-50 mb-20 overflow-hidden">
-                <img src={(data as any).point2Image3} className="w-full h-auto block" alt="Point 2-3" />
-              </div>
-            )}
-            {(data as any).aiPoint2Desc3 && (
-              <div className="max-w-3xl mx-auto text-center mt-12">
-                <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-                  {(data as any).aiPoint2Desc3}
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
+    <h3 className="text-5xl font-black tracking-tight text-gray-800 mb-4 uppercase scale-y-110">
+      POINT 02
+    </h3>
+
+    <div className="flex flex-col items-center">
+      <span className="font-serif text-3xl font-bold italic text-gray-600 mb-4 tracking-wide">Check!</span>
+      <div className="w-1 h-16 bg-gray-400"></div>
+      <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+    </div>
+  </div>
+
+  <div className="px-10">
+
+    {/* POINT 2 (1) */}
+    {point2Image1 && (
+      <div className="w-full bg-gray-50 mb-12 overflow-hidden">
+        <img src={point2Image1} className="w-full h-auto block" alt="Point 2-1" />
+      </div>
+    )}
+
+    {aiPoint2Desc && (
+      <div className="max-w-3xl mx-auto text-center mb-20">
+        <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
+          {aiPoint2Desc}
+        </p>
+      </div>
+    )}
+
+    {/* POINT 2 (2) */}
+    {(data as any).point2Image2 && (
+      <div className="w-full bg-gray-50 mb-12 overflow-hidden">
+        <img src={(data as any).point2Image2} className="w-full h-auto block" alt="Point 2-2" />
+      </div>
+    )}
+
+    {(data as any).aiPoint2Desc2 && (
+      <div className="max-w-3xl mx-auto text-center mb-20">
+        <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
+          {(data as any).aiPoint2Desc2}
+        </p>
+      </div>
+    )}
+
+    {/* POINT 2 (3) */}
+    {(data as any).point2Image3 && (
+      <div className="w-full bg-gray-50 mb-12 overflow-hidden">
+        <img src={(data as any).point2Image3} className="w-full h-auto block" alt="Point 2-3" />
+      </div>
+    )}
+
+    {(data as any).aiPoint2Desc3 && (
+      <div className="max-w-3xl mx-auto text-center">
+        <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
+          {(data as any).aiPoint2Desc3}
+        </p>
+      </div>
+    )}
+
+  </div>
+</section>
+)}
+
 
         {/* 사이즈 영역 */}
         <section className="pb-32">
