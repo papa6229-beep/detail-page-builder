@@ -230,83 +230,137 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </div>
         </section>
 
-        {/* POINT 1 영역 */}
-        <section className="pb-32">
-          <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
-            <div 
-              className="px-16 mb-6 text-white font-bold tracking-widest flex items-center justify-center"
-              style={{ 
-                background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
-                minWidth: '360px',
-                height: '48px'
-              }}
-            >
-              <span className="leading-none text-xl">{productNameKr || "상품명"}</span>
-            </div>
-            <h3 className="text-5xl font-black tracking-tight text-gray-800 mb-4 uppercase scale-y-110">
-              POINT 01
-            </h3>
-            <div className="flex flex-col items-center">
-              <span className="font-serif text-3xl font-bold italic text-gray-600 mb-4 tracking-wide">Check!</span>
-              <div className="w-1 h-16 bg-gray-400"></div>
-              <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-            </div>
-          </div>
+{/* POINT 1 영역 */}
+<section className="pb-32">
+  <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
+    <div 
+      className="px-16 mb-6 text-white font-bold tracking-widest flex items-center justify-center"
+      style={{ 
+        background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${themeColor} 25%, ${themeColor} 75%, rgba(255,255,255,0) 100%)`,
+        minWidth: '360px',
+        height: '48px'
+      }}
+    >
+      <span className="leading-none text-xl">{productNameKr || "상품명"}</span>
+    </div>
 
-          <div className="px-10">
-            <div className="w-full bg-gray-50 mb-12 overflow-hidden">
-               {point1Image1 ? (
-                <img src={point1Image1} className="w-full h-auto block" alt="Point 1-1" />
-              ) : (
-                <div className="w-full aspect-square flex items-center justify-center text-gray-200 font-bold text-3xl">POINT 1 IMAGE (1)</div>
-              )}
-            </div>
-            <div className="max-w-3xl mx-auto text-center mb-20">
-              <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
-                {renderHighlightText(
-  aiPoint1Desc || "첫 번째 포인트에 대한 상세 설명이 들어갑니다.",
-  themeColor
-)}
-              </p>
-            </div>
-{point1Image2 && (
-  <div className="w-full bg-gray-50 overflow-hidden mb-20">
-    <img
-      src={point1Image2}
-      className="w-full h-auto block"
-      alt="Point 1-2"
-    />
+    <h3 className="text-5xl font-black tracking-tight text-gray-800 mb-4 uppercase scale-y-110">
+      POINT 01
+    </h3>
+
+    <div className="flex flex-col items-center">
+      <span className="font-serif text-3xl font-bold italic text-gray-600 mb-4 tracking-wide">
+        Check!
+      </span>
+      <div className="w-1 h-16 bg-gray-400"></div>
+      <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+    </div>
   </div>
-)}
 
+  <div className="px-10">
 
-            {/* 확장 구조 */}
-            {(data as any).aiPoint1Desc2 && (
-              <div className="max-w-3xl mx-auto text-center mt-20 mb-20">
-                <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
-                  {renderHighlightText((data as any).aiPoint1Desc2, themeColor)}
-                </p>
-              </div>
-            )}
-            {(data as any).point1Image3 && (
-  <div className="w-full bg-gray-50 mb-12 overflow-hidden">
-    <img
-      src={(data as any).point1Image3}
-      className="w-full h-auto block"
-      alt="Point 1-3"
-    />
+    {/* 이미지 1 */}
+    <div className="w-full bg-gray-50 mb-12 overflow-hidden">
+      {point1Image1 ? (
+        <img src={point1Image1} className="w-full h-auto block" alt="Point 1-1" />
+      ) : (
+        <div className="w-full aspect-square flex items-center justify-center text-gray-200 font-bold text-3xl">
+          POINT 1 IMAGE (1)
+        </div>
+      )}
+    </div>
+
+    {/* 설명 1 + 배경 숫자 */}
+    <div className="relative max-w-3xl mx-auto text-center mb-20">
+      <div
+        className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+        style={{
+          fontSize: '240px',
+          fontWeight: 900,
+          color: themeColor,
+          opacity: 0.06,
+          lineHeight: 1,
+        }}
+      >
+        01
+      </div>
+
+      <p className="relative z-10 text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+        {renderHighlightText(
+          aiPoint1Desc || "첫 번째 포인트에 대한 상세 설명이 들어갑니다.",
+          themeColor
+        )}
+      </p>
+    </div>
+
+    {/* 이미지 2 */}
+    {point1Image2 && (
+      <div className="w-full bg-gray-50 overflow-hidden mb-20">
+        <img
+          src={point1Image2}
+          className="w-full h-auto block"
+          alt="Point 1-2"
+        />
+      </div>
+    )}
+
+    {/* 확장 설명 2 + 동일 배경 숫자 */}
+    {(data as any).aiPoint1Desc2 && (
+      <div className="relative max-w-3xl mx-auto text-center mt-20 mb-20">
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          style={{
+            fontSize: '240px',
+            fontWeight: 900,
+            color: themeColor,
+            opacity: 0.06,
+            lineHeight: 1,
+          }}
+        >
+          01
+        </div>
+
+        <p className="relative z-10 text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+          {renderHighlightText((data as any).aiPoint1Desc2, themeColor)}
+        </p>
+      </div>
+    )}
+
+    {/* 이미지 3 */}
+    {(data as any).point1Image3 && (
+      <div className="w-full bg-gray-50 mb-12 overflow-hidden">
+        <img
+          src={(data as any).point1Image3}
+          className="w-full h-auto block"
+          alt="Point 1-3"
+        />
+      </div>
+    )}
+
+    {/* 확장 설명 3 + 동일 배경 숫자 */}
+    {(data as any).aiPoint1Desc3 && (
+      <div className="relative max-w-3xl mx-auto text-center mb-20">
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          style={{
+            fontSize: '240px',
+            fontWeight: 900,
+            color: themeColor,
+            opacity: 0.06,
+            lineHeight: 1,
+          }}
+        >
+          01
+        </div>
+
+        <p className="relative z-10 text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+          {renderHighlightText((data as any).aiPoint1Desc3, themeColor)}
+        </p>
+      </div>
+    )}
   </div>
-)}
+</section>
 
-{(data as any).aiPoint1Desc3 && (
-  <div className="max-w-3xl mx-auto text-center mt-0 mb-20">
-    <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
-      {renderHighlightText((data as any).aiPoint1Desc3, themeColor)}
-    </p>
-  </div>
-)}
-          </div>
-        </section>
 
         {/* POINT 2 영역 (조건부 전체) */}
 {(
@@ -319,7 +373,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 ) && (
 <section className="pb-32">
 
-  {/* POINT 2 디자인 헤더 (조건부) */}
+  {/* POINT 2 헤더 */}
   <div className="w-full flex flex-col items-center justify-center mb-10 mt-8">
     <div
       className="px-16 mb-6 text-white font-bold tracking-widest flex items-center justify-center"
@@ -337,7 +391,9 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
     </h3>
 
     <div className="flex flex-col items-center">
-      <span className="font-serif text-3xl font-bold italic text-gray-600 mb-4 tracking-wide">Check!</span>
+      <span className="font-serif text-3xl font-bold italic text-gray-600 mb-4 tracking-wide">
+        Check!
+      </span>
       <div className="w-1 h-16 bg-gray-400"></div>
       <div className="w-3 h-3 rounded-full bg-gray-400"></div>
     </div>
@@ -353,9 +409,22 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
     )}
 
     {aiPoint2Desc && (
-      <div className="max-w-3xl mx-auto text-center mb-20">
-        <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
-          {renderHighlightText((data as any).aiPoint2Desc, themeColor)}
+      <div className="relative max-w-3xl mx-auto text-center mb-20">
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          style={{
+            fontSize: '240px',
+            fontWeight: 900,
+            color: themeColor,
+            opacity: 0.06,
+            lineHeight: 1,
+          }}
+        >
+          02
+        </div>
+
+        <p className="relative z-10 text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+          {renderHighlightText(aiPoint2Desc, themeColor)}
         </p>
       </div>
     )}
@@ -368,8 +437,21 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
     )}
 
     {(data as any).aiPoint2Desc2 && (
-      <div className="max-w-3xl mx-auto text-center mb-20">
-        <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+      <div className="relative max-w-3xl mx-auto text-center mb-20">
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          style={{
+            fontSize: '240px',
+            fontWeight: 900,
+            color: themeColor,
+            opacity: 0.06,
+            lineHeight: 1,
+          }}
+        >
+          02
+        </div>
+
+        <p className="relative z-10 text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
           {renderHighlightText((data as any).aiPoint2Desc2, themeColor)}
         </p>
       </div>
@@ -380,11 +462,24 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
       <div className="w-full bg-gray-50 mb-12 overflow-hidden">
         <img src={(data as any).point2Image3} className="w-full h-auto block" alt="Point 2-3" />
       </div>
-    )} 
+    )}
 
     {(data as any).aiPoint2Desc3 && (
-      <div className="max-w-3xl mx-auto text-center">
-        <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+      <div className="relative max-w-3xl mx-auto text-center mb-20">
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          style={{
+            fontSize: '240px',
+            fontWeight: 900,
+            color: themeColor,
+            opacity: 0.06,
+            lineHeight: 1,
+          }}
+        >
+          02
+        </div>
+
+        <p className="relative z-10 text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
           {renderHighlightText((data as any).aiPoint2Desc3, themeColor)}
         </p>
       </div>
@@ -393,6 +488,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
   </div>
 </section>
 )}
+
 
 
         {/* 사이즈 영역 */}
