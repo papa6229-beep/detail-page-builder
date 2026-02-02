@@ -1,375 +1,344 @@
 import React from 'react';
-import { ProductData, ImageType, SummaryInfo, OptionItem } from '../types';
+import { ProductData, OptionItem } from '../types';
 import { COLOR_PRESETS } from '../constants';
+
+// =============================================================================
+// ✅ 컴포넌트들을 Editor 함수 밖으로 꺼냈습니다 (입력 끊김 해결의 핵심!)
+// =============================================================================
+
+// 1. 공통 이미지 업로더
+const ImageUploader = React.memo(({ 
+  label, value, subLabel, isSmall = false, targetId, onDelete, onChange 
+}: { 
+  label: string, value: string | null, subLabel?: string, isSmall?: boolean, targetId?: string, onDelete?: () => void, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void 
+}) => {
+  const hasImage = value && value !== '__ENABLED__';
+  
+  const scrollToPreview = () => {
+    if (targetId) {
+      const element = document.getElementById(targetId);
+      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  return (
+    <div className="mb-4" onClick={scrollToPreview}>
+      <div className="flex justify-between items-end mb-1">
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">
+              {label} <span className="text-gray-300 font-normal">{subLabel}</span>
+          </label>
+          {onDelete && value && (
+              <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-[10px] text-red-400 font-bold hover:text-red-600 underline">삭제</button>
+          )}
+      </div>
+      <div className={`relative w-full ${isSmall ? 'h-32' : 'aspect-video'} bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg overflow-hidden hover:border-gray-400 transition-colors group cursor-pointer`}>
+        {hasImage ? (
+          <img src={value} alt={label} className="w-full h-full object-contain bg-white" />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-300">
+            <span className="text-2xl mb-1">+</span>
+            <span className="text-[10px] font-bold">UPLOAD</span>
+          </div>
+        )}
+        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onChange} />
+      </div>
+    </div>
+  );
+});
+
+// 2. 공통 텍스트 에디터 (memo 적용으로 성능 최적화)
+const Textarea = React.memo(({ 
+  label, value, placeholder, rows = 3, targetId, onDelete, onChange 
+}: { 
+  label: string, value: string, placeholder: string, rows?: number, targetId?: string, onDelete?: () => void, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void 
+}) => {
+  
+  const handleFocus = () => {
+    if (targetId) {
+      const element = document.getElementById(targetId);
+      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  return (
+    <div className="mb-5" onFocus={handleFocus}>
+      <div className="flex justify-between items-end mb-2">
+          <label className="block text-xs font-bold text-gray-700">{label}</label>
+          {onDelete && value && <button onClick={onDelete} className="text-[10px] text-red-400 font-bold hover:text-red-600 underline">삭제</button>}
+      </div>
+      <textarea
+        className="w-full p-3 border border-gray-200 rounded-lg text-sm leading-relaxed focus:ring-2 focus:ring-black outline-none transition-shadow resize-y"
+        value={value === '__ENABLED__' ? '' : value || ''}
+        onChange={onChange}
+        placeholder={placeholder}
+        rows={rows}
+      />
+    </div>
+  );
+});
+
+// =============================================================================
+// 메인 Editor 컴포넌트
+// =============================================================================
 
 interface EditorProps {
   data: ProductData;
-  onChange: (data: ProductData) => void;
+  onChange: (value: React.SetStateAction<ProductData>) => void;
   onGenerateAI: () => void;
   isLoading: boolean;
 }
 
 const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading }) => {
 
-  /* ================= 공통 핸들러 ================= */
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    if (name.startsWith('summary_')) {
-      const field = name.replace('summary_', '') as keyof SummaryInfo;
-      onChange({ ...data, summaryInfo: { ...data.summaryInfo, [field]: value } });
-    } else {
-      onChange({ ...data, [name]: value });
+  // --- 핸들러 함수들 ---
+  
+  // 스크롤 이동
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  // 텍스트 변경
+  const handleTextChange = (key: keyof ProductData) => (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+    onChange(prev => ({ ...prev, [key]: e.target.value }));
+  };
+
+  // 스펙 변경
+  const handleSummaryChange = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(prev => ({
+        ...prev,
+        summaryInfo: { ...prev.summaryInfo, [key]: e.target.value }
+    }));
+  };
+
+  // 이미지 업로드
+  const handleImageChange = (key: keyof ProductData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => onChange(prev => ({ ...prev, [key]: reader.result as string }));
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleImageUpload = (type: ImageType) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      onChange({ ...data, [type]: reader.result as string });
-    };
-    reader.readAsDataURL(file);
+  // 컬러 변경
+  const handleColorChange = (color: string) => {
+    onChange(prev => ({ ...prev, themeColor: color }));
   };
 
-  const ImageInput = ({ label, type }: { label: string; type: ImageType }) => (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <div className="flex items-center gap-4">
-        <input type="file" accept="image/*" onChange={handleImageUpload(type)} />
-        {!!data[type] && data[type].startsWith('data:') && (
-  <img
-    src={data[type] as string}
-    className="w-24 h-24 rounded border object-cover"
-    alt=""
-  />
-)}
+  // 서브 포인트 제어 (활성화/삭제)
+  const enableSlot = (key: keyof ProductData) => {
+    onChange(prev => ({ ...prev, [key]: '__ENABLED__' }));
+  };
+  
+  const removeSlot = (key: keyof ProductData) => {
+    onChange(prev => ({ ...prev, [key]: key.toLowerCase().includes('image') ? null : '' }));
+  };
 
-      </div>
-    </div>
-  );
-
-  /* ================= 옵션 ================= */
+  // 옵션 관련
   const addOption = () => {
-    const opt: OptionItem = { id: Date.now().toString(), name: '', image: null };
-    onChange({ ...data, options: [...data.options, opt] });
+    const newOption: OptionItem = { id: Date.now().toString(), name: '', image: null };
+    onChange(prev => ({ ...prev, options: [...prev.options, newOption] }));
   };
-
-  const updateOptionName = (id: string, name: string) => {
-    onChange({
-      ...data,
-      options: data.options.map(o => (o.id === id ? { ...o, name } : o)),
-    });
-  };
-
-  const updateOptionImage = (id: string, file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      onChange({
-        ...data,
-        options: data.options.map(o =>
-          o.id === id ? { ...o, image: reader.result as string } : o
-        ),
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const removeOption = (id: string) => {
-    onChange({ ...data, options: data.options.filter(o => o.id !== id) });
+    if (window.confirm('삭제하시겠습니까?')) {
+        onChange(prev => ({ ...prev, options: prev.options.filter(o => o.id !== id) }));
+    }
+  };
+  const updateOptionName = (id: string, name: string) => {
+    onChange(prev => ({
+        ...prev,
+        options: prev.options.map(opt => opt.id === id ? { ...opt, name } : opt)
+    }));
+  };
+  const updateOptionImage = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onChange(prev => ({
+            ...prev,
+            options: prev.options.map(opt => opt.id === id ? { ...opt, image: reader.result as string } : opt)
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  /* ================= 헬퍼 ================= */
-  const toggleField = (key: string) => {
-    onChange({ ...data, [key]: data[key as keyof ProductData] ? '' : '' });
+  // 서브포인트 렌더링 헬퍼
+  const renderSubPoint = (n: number, prefix: 'point1' | 'point2', targetId: string) => {
+    const imgKey = `${prefix}Image${n}` as keyof ProductData;
+    const descKey = `ai${prefix.charAt(0).toUpperCase() + prefix.slice(1)}Desc${n}` as keyof ProductData;
+    const isImgActive = (data as any)[imgKey];
+    const isDescActive = (data as any)[descKey];
+
+    if (!isImgActive && !isDescActive) {
+        return (
+            <div className="flex gap-2 mt-4">
+                <button onClick={() => enableSlot(imgKey)} className="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all text-xs">+ 이미지 ({prefix}-{n})</button>
+                <button onClick={() => enableSlot(descKey)} className="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-green-400 hover:text-green-500 hover:bg-green-50 transition-all text-xs">+ 설명 ({prefix}-{n})</button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mt-4 pt-4 border-t border-dashed border-gray-200 animate-fade-in-down">
+            <div className="text-xs font-bold text-gray-400 mb-2 uppercase">{prefix} - {n}</div>
+            {isImgActive ? (
+                <ImageUploader label={`Image ${prefix === 'point1' ? '1' : '2'}-${n}`} value={(data as any)[imgKey]} targetId={targetId} onDelete={() => removeSlot(imgKey)} onChange={handleImageChange(imgKey)} />
+            ) : (
+                <button onClick={() => enableSlot(imgKey)} className="w-full py-2 mb-4 border border-dashed border-gray-200 rounded text-xs text-gray-400 hover:bg-gray-50">+ 이미지 추가</button>
+            )}
+            {isDescActive ? (
+                <Textarea label={`설명 ${prefix === 'point1' ? '1' : '2'}-${n}`} value={(data as any)[descKey]} placeholder="AI 작성 영역" targetId={targetId} onDelete={() => removeSlot(descKey)} onChange={handleTextChange(descKey)} />
+            ) : (
+                <button onClick={() => enableSlot(descKey)} className="w-full py-2 border border-dashed border-gray-200 rounded text-xs text-gray-400 hover:bg-gray-50">+ 설명 추가</button>
+            )}
+        </div>
+    );
+  };
+
+  // 스펙 라벨 (한글)
+  const SPEC_LABELS: Record<string, string> = {
+    feature: '특징', type: '타입/종류', material: '재질/소재', size: '사이즈 (mm)', weight: '무게 (g)', power: '전원/충전', maker: '제조사'
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 h-full overflow-y-auto space-y-10">
-
-      {/* 컬러 테마 */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">컬러 테마</h2>
-        <div className="flex gap-2 flex-wrap">
-          {COLOR_PRESETS.map(p => (
-            <button
-              key={p.value}
-              className={`w-8 h-8 rounded-full border-2 ${
-                data.themeColor === p.value ? 'border-black scale-110' : 'border-transparent'
-              }`}
-              style={{ backgroundColor: p.value }}
-              onClick={() => onChange({ ...data, themeColor: p.value })}
-            />
-          ))}
-          <input
-            type="color"
-            value={data.themeColor}
-            onChange={e => onChange({ ...data, themeColor: e.target.value })}
-          />
+    <div className="p-6 pb-32 space-y-8 relative">
+      
+      {/* 1. 기본 설정 */}
+      <section className="space-y-4" onClick={() => scrollTo('preview-top')}>
+        <h2 className="text-lg font-black text-gray-900 border-b pb-2">📂 기본 설정</h2>
+        <div className="mb-4">
+            <label className="block text-sm font-bold text-gray-700 mb-2">컬러 테마</label>
+            <div className="flex gap-2 flex-wrap mb-2">
+                {COLOR_PRESETS.map(p => (
+                    <button key={p.value} onClick={() => handleColorChange(p.value)} className={`w-8 h-8 rounded-full border-2 transition-transform ${data.themeColor === p.value ? 'border-gray-600 scale-110' : 'border-transparent hover:scale-105'}`} style={{ background: p.value }} title={(p as any).label || p.value} />
+                ))}
+            </div>
+             <div className="flex gap-2">
+                <input type="color" className="w-10 h-10 rounded cursor-pointer border-none" value={data.themeColor} onChange={(e) => handleColorChange(e.target.value)} />
+                <input type="text" className="flex-1 p-2 border border-gray-300 rounded uppercase text-sm" value={data.themeColor} onChange={(e) => handleColorChange(e.target.value)} />
+             </div>
+        </div>
+        <div>
+           <label className="block text-sm font-bold text-gray-700 mb-1">제조사/브랜드명</label>
+           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium text-gray-600" value={data.brandName} onChange={handleTextChange('brandName')} placeholder="예: BANANA MALL" />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1">상품명 (한글)</label>
+          <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-bold" value={data.productNameKr} onChange={handleTextChange('productNameKr')} placeholder="예: 바나나 오나홀" />
+        </div>
+        <div>
+           <label className="block text-sm font-bold text-gray-700 mb-1">영문 상품명</label>
+           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium font-montserrat" value={data.productNameEn} onChange={handleTextChange('productNameEn')} placeholder="BANANA ONAHOLE" />
         </div>
       </section>
 
-      {/* 기본 정보 */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">기본 정보</h2>
-        <input name="productNameKr" value={data.productNameKr} onChange={handleInputChange} className="w-full p-2 border rounded mb-2" placeholder="상품명 (한글)" />
-        <input name="productNameEn" value={data.productNameEn} onChange={handleInputChange} className="w-full p-2 border rounded mb-2" placeholder="상품명 (영문)" />
-        <input name="brandName" value={data.brandName} onChange={handleInputChange} className="w-full p-2 border rounded" placeholder="제조사명" />
+      {/* 2. 스펙 정보 */}
+      <section className="space-y-4" onClick={() => scrollTo('preview-spec')}>
+         <h2 className="text-lg font-black text-gray-900 border-b pb-2">📝 스펙 정보</h2>
+         <div className="grid grid-cols-2 gap-3">
+            {Object.keys(SPEC_LABELS).map((key) => (
+              <div key={key}>
+                 <label className="block text-xs font-bold text-gray-500 mb-1 capitalize">{SPEC_LABELS[key]}</label>
+                 <input type="text" className="w-full p-2 border border-gray-200 rounded text-sm" value={(data.summaryInfo as any)[key] || ''} onChange={handleSummaryChange(key)} onFocus={() => scrollTo('preview-spec')} />
+              </div>
+            ))}
+         </div>
+         <Textarea label="AI 생성 참고용 핵심 요약" value={data.aiSummary} placeholder="예: 강력한 진동, 부드러운 실리콘 재질..." rows={2} targetId="preview-spec" onChange={handleTextChange('aiSummary')} />
       </section>
 
-      {/* 메인 이미지 */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">메인 이미지</h2>
-        <ImageInput label="메인 이미지 파일 선택" type={ImageType.MAIN} />
+      {/* 3. 메인 이미지 */}
+      <section className="space-y-4" onClick={() => scrollTo('preview-main')}>
+        <h2 className="text-lg font-black text-gray-900 border-b pb-2">🖼️ 메인 이미지</h2>
+        <ImageUploader label="Main Image" value={data.mainImage} targetId="preview-main" onChange={handleImageChange('mainImage')} />
+        <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-1"><ImageUploader label="Package Image" value={data.packageImage} isSmall={true} targetId="preview-main" onChange={handleImageChange('packageImage')} /></div>
+             <div className="col-span-1 flex items-center justify-center text-xs text-gray-400">패키지 이미지는<br/>작게 출력됩니다.</div>
+        </div>
       </section>
 
-      {/* 요약 정보 */}
-<section>
-  <h2 className="text-xl font-bold mb-4">요약 정보</h2>
-
-  {([
-    { key: 'feature', label: '특징' },
-    { key: 'type', label: '타입' },
-    { key: 'material', label: '재질' },
-    { key: 'size', label: '치수' },
-    { key: 'weight', label: '무게' },
-    { key: 'power', label: '전원타입' },
-    { key: 'maker', label: '제조사' },
-  ] as const).map(item => (
-    <input
-      key={item.key}
-      name={`summary_${item.key}`}
-      value={data.summaryInfo[item.key]}
-      onChange={handleInputChange}
-      className="w-full p-2 border rounded mb-2"
-      placeholder={item.label}
-    />
-  ))}
-</section>
-
-
-      {/* 핵심 특징 */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">핵심 특징 3줄</h2>
-        <textarea name="aiSummary" value={data.aiSummary} onChange={handleInputChange} rows={3} className="w-full p-2 border rounded" />
+      {/* 4. 옵션 */}
+      <section className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-option')}>
+         <div className="flex justify-between items-center mb-4">
+             <h2 className="text-md font-bold text-gray-900">✨ 추가 옵션 (Option)</h2>
+             <button onClick={addOption} className="text-xs bg-black text-white px-3 py-1.5 rounded hover:bg-gray-800">+ 추가</button>
+         </div>
+         {data.options.map((opt, i) => (
+             <div key={opt.id} className="bg-white p-3 rounded border border-gray-200 mb-3 last:mb-0 relative" onFocus={() => scrollTo('preview-option')}>
+                 <div className="flex justify-between items-center mb-2">
+                    <div className="text-xs font-bold text-gray-400">Option {i + 1}</div>
+                    <button onClick={() => removeOption(opt.id)} className="text-red-500 text-xs font-bold hover:underline px-2">삭제</button>
+                 </div>
+                 <input type="text" value={opt.name} onChange={(e) => updateOptionName(opt.id, e.target.value)} placeholder="옵션명" className="w-full p-2 border border-gray-200 rounded text-sm mb-2" />
+                 <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0 border">
+                        {opt.image ? <img src={opt.image} className="w-full h-full object-cover" alt="opt" /> : <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No Img</div>}
+                    </div>
+                    <input type="file" className="text-xs" onChange={(e) => updateOptionImage(opt.id, e)} />
+                 </div>
+             </div>
+         ))}
       </section>
 
-      {/* 패키지 이미지 */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">패키지 이미지</h2>
-        <ImageInput label="패키지 이미지 파일 선택" type={ImageType.PACKAGE} />
+      {/* 5. 상세 포인트 */}
+      <section className="space-y-6">
+         <h2 className="text-lg font-black text-gray-900 border-b pb-2">✨ 상세 포인트</h2>
+         
+         {/* Feature */}
+         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-feature')}>
+            <h3 className="font-bold text-gray-800 mb-3">Feature (핵심 특징)</h3>
+            <ImageUploader label="Feature Image" value={data.featureImage} targetId="preview-feature" onChange={handleImageChange('featureImage')} />
+            <Textarea label="AI 설명" value={data.aiFeatureDesc} placeholder="AI 작성 영역" targetId="preview-feature" onChange={handleTextChange('aiFeatureDesc')} />
+         </div>
+
+         {/* Point 1 */}
+         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-point1')}>
+            <h3 className="font-bold text-gray-800 mb-3">Point 01</h3>
+            <ImageUploader label="Image 1-1" value={data.point1Image1} targetId="preview-point1" onChange={handleImageChange('point1Image1')} />
+            <Textarea label="설명 1-1" value={data.aiPoint1Desc} placeholder="AI 작성 영역" targetId="preview-point1" onChange={handleTextChange('aiPoint1Desc')} />
+            
+            {renderSubPoint(2, 'point1', 'preview-point1')}
+            {renderSubPoint(3, 'point1', 'preview-point1')}
+         </div>
+
+         {/* Point 2 */}
+         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-point2')}>
+            <h3 className="font-bold text-gray-800 mb-3">Point 02</h3>
+            {data.point2Image1 || data.aiPoint2Desc ? (
+               <>
+                 <div className="flex justify-between items-center mb-2">
+                     <span className="text-xs font-bold text-gray-500">Main</span>
+                     <button onClick={() => { removeSlot('point2Image1'); removeSlot('aiPoint2Desc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제</button>
+                 </div>
+                 <ImageUploader label="Image 2-1" value={data.point2Image1} targetId="preview-point2" onChange={handleImageChange('point2Image1')} />
+                 <Textarea label="설명 2-1" value={data.aiPoint2Desc} placeholder="AI 작성 영역" targetId="preview-point2" onChange={handleTextChange('aiPoint2Desc')} />
+                 
+                 {renderSubPoint(2, 'point2', 'preview-point2')}
+                 {renderSubPoint(3, 'point2', 'preview-point2')}
+               </>
+            ) : (
+               <button onClick={() => { enableSlot('point2Image1'); enableSlot('aiPoint2Desc'); }} className="w-full py-8 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold text-lg hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-all">+ Point 02 섹션 추가하기</button>
+            )}
+         </div>
+
+         {/* Size & Thumb */}
+         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-size')}>
+            <h2 className="text-md font-bold text-gray-900 mb-3">📏 사이즈 및 썸네일</h2>
+            <div className="grid grid-cols-2 gap-4">
+                <ImageUploader label="Size Detail" value={data.sizeImage} targetId="preview-size" onChange={handleImageChange('sizeImage')} />
+                <ImageUploader label="Thumbnail" value={data.thumbnailImage} targetId="preview-size" onChange={handleImageChange('thumbnailImage')} />
+            </div>
+         </div>
       </section>
 
-      {/* 옵션 */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">옵션 (선택)</h2>
-        <button onClick={addOption} className="mb-3 text-sm bg-black text-white px-3 py-1 rounded">+ 옵션 추가</button>
-        {data.options.map((o, i) => (
-          <div key={o.id} className="border p-3 rounded mb-3">
-            <input value={o.name} onChange={e => updateOptionName(o.id, e.target.value)} className="w-full p-2 border rounded mb-2" placeholder={`옵션명 ${i + 1}`} />
-            <input type="file" onChange={e => e.target.files && updateOptionImage(o.id, e.target.files[0])} />
-            {o.image && <img src={o.image} className="w-10 h-10 mt-2" />}
-            <button onClick={() => removeOption(o.id)} className="text-xs text-red-500 mt-2">삭제</button>
-          </div>
-        ))}
-      </section>
-
-      {/* 메인 특징 */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">메인 특징 이미지</h2>
-        <ImageInput label="메인 특징 이미지 파일 선택" type={ImageType.FEATURE} />
-      </section>
-
-      <section>
-        <h2 className="text-xl font-bold mb-4">메인 특징 설명</h2>
-        <textarea name="aiFeatureDesc" value={data.aiFeatureDesc} onChange={handleInputChange} rows={3} className="w-full p-2 border rounded" />
-      </section>
-
-      {/* POINT 1 (필수) */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">POINT 1</h2>
-        <ImageInput label="POINT 1 (1)" type={ImageType.POINT1_1} />
-        <textarea
-  name="aiPoint1Desc"
-  value={data.aiPoint1Desc}
-  onChange={handleInputChange}
-  rows={2}
-  className="w-full p-2 border rounded mb-6"
-  placeholder="POINT 1의 핵심 설명을 입력하세요"
-/>
-
-      {/* POINT 1 선택 확장 (2, 3) */}
-{[2, 3].map(n => {
-  const imgKey = `point1Image${n}`;
-  const descKey = `aiPoint1Desc${n}`;
-
-  const hasImage = !!(data as any)[imgKey];
-  const hasDesc = !!(data as any)[descKey];
-
-  return (
-    <div key={n} className="mb-6 space-y-3">
-      <div className="text-sm font-bold text-gray-600">POINT 1 ({n})</div>
-
-      {/* 이미지 토글 */}
-      {!hasImage ? (
-        <button
-          type="button"
-          className="text-xs text-rose-600"
-          onClick={() =>
-            onChange({ ...data, [imgKey]: '__ENABLED__' } as any)
-          }
-        >
-          + 이미지 추가
+      {/* AI Button */}
+      <div className="sticky bottom-0 z-50 bg-white border-t border-gray-200 p-4 -mx-6 shadow-2xl">
+        <button onClick={onGenerateAI} disabled={isLoading} className={`w-full py-4 rounded-xl font-black text-lg shadow-lg transform transition-all flex items-center justify-center gap-2 ${isLoading ? 'bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-rose-600 text-white hover:bg-rose-700 hover:scale-[1.01]'}`}>
+          {isLoading ? <>AI가 문구 작성중...</> : <>✨ AI 문구 자동 생성하기</>}
         </button>
-      ) : (
-        <>
-          <ImageInput
-            label={`POINT 1 (${n}) 이미지`}
-            type={ImageType[`POINT1_${n}` as keyof typeof ImageType]}
-          />
-          <button
-            type="button"
-            className="text-xs text-red-400"
-            onClick={() =>
-              onChange({ ...data, [imgKey]: '' } as any)
-            }
-          >
-            − 이미지 제거
-          </button>
-        </>
-      )}
-
-      {/* 설명 토글 */}
-      {!hasDesc ? (
-        <button
-          type="button"
-          className="text-xs text-gray-500"
-          onClick={() =>
-            onChange({ ...data, [descKey]: '__ENABLED__' } as any)
-          }
-        >
-          + 설명 추가
-        </button>
-      ) : (
-        <>
-          <textarea
-            name={descKey}
-            value={(data as any)[descKey] === '__ENABLED__' ? '' : (data as any)[descKey]}
-            onChange={handleInputChange}
-            rows={2}
-            className="w-full p-2 border rounded"
-            placeholder={`POINT 1 (${n}) 설명을 입력하세요`}
-          />
-          <button
-            type="button"
-            className="text-xs text-red-400"
-            onClick={() =>
-              onChange({ ...data, [descKey]: '' } as any)
-            }
-          >
-            − 설명 제거
-          </button>
-        </>
-      )}
-    </div>
-  );
-})}
-
-      </section>
-
-     {/* POINT 2 (선택 확장형) */}
-<section>
-  <h2 className="text-xl font-bold mb-4">POINT 2</h2>
-
-  {[1, 2, 3].map(n => {
-    const imgKey = `point2Image${n === 1 ? '1' : n}`;
-    const descKey = `aiPoint2Desc${n === 1 ? '' : n}`;
-
-    const hasImage = !!(data as any)[imgKey];
-    const hasDesc = !!(data as any)[descKey];
-
-    return (
-      <div key={n} className="mb-6 space-y-3">
-        <div className="text-sm font-bold text-gray-600">POINT 2 ({n})</div>
-
-        {/* 이미지 토글 */}
-        {!hasImage ? (
-          <button
-            type="button"
-            className="text-xs text-rose-600"
-            onClick={() =>
-              onChange({ ...data, [imgKey]: '__ENABLED__' } as any)
-            }
-          >
-            + 이미지 추가
-          </button>
-        ) : (
-          <>
-            <ImageInput
-              label={`POINT 2 (${n}) 이미지`}
-              type={ImageType[`POINT2_${n}` as keyof typeof ImageType]}
-            />
-            <button
-              type="button"
-              className="text-xs text-red-400"
-              onClick={() =>
-                onChange({ ...data, [imgKey]: '' } as any)
-              }
-            >
-              − 이미지 제거
-            </button>
-          </>
-        )}
-
-        {/* 설명 토글 */}
-        {!hasDesc ? (
-          <button
-            type="button"
-            className="text-xs text-gray-500"
-            onClick={() =>
-              onChange({ ...data, [descKey]: '__ENABLED__' } as any)
-            }
-          >
-            + 설명 추가
-          </button>
-        ) : (
-          <>
-            <textarea
-              name={descKey}
-              value={(data as any)[descKey] === '__ENABLED__' ? '' : (data as any)[descKey]}
-              onChange={handleInputChange}
-              rows={2}
-              className="w-full p-2 border rounded"
-              placeholder={`POINT 2 (${n}) 설명을 입력하세요`}
-            />
-            <button
-              type="button"
-              className="text-xs text-red-400"
-              onClick={() =>
-                onChange({ ...data, [descKey]: '' } as any)
-              }
-            >
-              − 설명 제거
-            </button>
-          </>
-        )}
       </div>
-    );
-  })}
-</section>
-
-      {/* 사이즈 */}
-      <section>
-        <ImageInput label="사이즈 상세 이미지" type={ImageType.SIZE} />
-        <ImageInput label="썸네일 개별 이미지" type={ImageType.THUMBNAIL} />
-      </section>
-
-      {/* 하단 버튼 */}
-      <section className="sticky bottom-0 bg-white pt-4 border-t">
-        <button onClick={onGenerateAI} disabled={isLoading} className="w-full py-4 bg-rose-600 text-white font-bold rounded">
-          {isLoading ? 'AI 생성 중...' : 'AI 문구 자동 생성'}
-        </button>
-      </section>
     </div>
   );
 };

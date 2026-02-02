@@ -16,19 +16,14 @@ const App: React.FC = () => {
 
   const handleGenerateAI = async () => {
     if (!data.productNameKr) {
-      alert('상품명을 먼저 입력해주세요.');
+      alert('상품명을 입력해주세요. AI가 상품명을 모르면 글을 못 씁니다!');
       return;
     }
+
     setIsLoading(true);
     try {
       const aiResult = await generateCopywriting(data);
-      setData(prev => ({
-  ...prev,
-  aiSummary: prev.aiSummary || aiResult.aiSummary,
-  aiFeatureDesc: aiResult.aiFeatureDesc,
-  aiPoint1Desc: aiResult.aiPoint1Desc,
-  aiPoint2Desc: aiResult.aiPoint2Desc,
-}));
+      setData(prev => ({ ...prev, ...aiResult }));
     } catch (error) {
       console.error(error);
       alert('AI 문구 생성 중 오류가 발생했습니다.');
@@ -45,7 +40,7 @@ const App: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 800)); 
       const fullHeight = element.scrollHeight; 
       const canvas = await html2canvas(element, {
-        scale: 1,
+        scale: 1.5,
         useCORS: true,
         allowTaint: false,
         width: 800,
@@ -55,13 +50,14 @@ const App: React.FC = () => {
         x: 0, y: 0, scrollY: 0,
         backgroundColor: '#ffffff' 
       });
-      const image = canvas.toDataURL('image/jpeg', 1.0); 
+      const image = canvas.toDataURL('image/jpeg', 0.9); 
       const link = document.createElement('a');
-      link.download = `detail_page_${data.productNameKr || 'standard'}.jpg`;
+      link.download = `detail_page_${data.productNameKr || 'product'}.jpg`;
       link.href = image;
       link.click();
     } catch (err) {
       console.error('Export failed', err);
+      alert('이미지 저장 실패');
     } finally {
       setIsLoading(false);
     }
@@ -83,41 +79,37 @@ const App: React.FC = () => {
           link.download = `thumbnail_${size}.jpg`;
           link.href = image;
           link.click();
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
     } catch (err) {
-      alert('썸네일 저장 중 오류 발생');
+      alert('썸네일 저장 실패');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 font-sans overflow-x-hidden">
-      {/* 📱 반응형 네비게이션 */}
-      <nav className="bg-white border-b px-4 py-3 flex flex-col md:flex-row items-center justify-between shadow-sm z-30 sticky top-0 gap-3">
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="w-8 h-8 bg-rose-600 rounded flex items-center justify-center shrink-0">
-             <span className="text-white font-black text-lg">B</span>
-          </div>
-          <h1 className="text-base font-black text-gray-800 truncate">상세페이지 빌더 v3.0</h1>
+    // ✅ 화면 전체 높이 고정 (overflow-hidden) -> 내부에서 스크롤 처리
+    <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
+      
+      {/* 헤더 */}
+      <nav className="bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm flex-shrink-0 h-[70px]">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-black text-white rounded flex items-center justify-center font-black text-lg">B</div>
+          <h1 className="font-bold text-gray-800 text-lg">상세페이지 빌더 v3.0</h1>
         </div>
-        
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <button onClick={exportThumbnails} className="flex-1 md:flex-none px-3 py-2 border border-rose-200 text-rose-600 rounded-lg font-bold text-xs whitespace-nowrap">
-            Thumbnail
-          </button>
-          <button onClick={exportDetailPage} className="flex-1 md:flex-none px-3 py-2 bg-rose-600 text-white rounded-lg font-bold text-xs shadow-md whitespace-nowrap">
-            Export JPG
-          </button>
+        <div className="flex gap-2">
+           <button onClick={exportThumbnails} className="px-4 py-2 border border-gray-300 rounded text-sm font-bold hover:bg-gray-50">썸네일 저장</button>
+           <button onClick={exportDetailPage} className="px-4 py-2 bg-black text-white rounded text-sm font-bold hover:bg-gray-800">전체 이미지 저장</button>
         </div>
       </nav>
 
-      {/* 📱 메인 레이아웃: 모바일(Column) / 데스크톱(Row) */}
+      {/* 메인 영역 (flex-1로 남은 공간 다 차지) */}
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* 에디터 영역: 모바일에서는 상단에 위치하고 높이를 제한하여 프리뷰를 볼 수 있게 함 */}
-        <aside className="w-full lg:w-[400px] xl:w-[480px] border-b lg:border-r h-[50vh] lg:h-full overflow-y-auto bg-white z-20 shrink-0">
+        
+        {/* 에디터 (좌측) - 독립 스크롤 */}
+        <aside className="w-full lg:w-[450px] border-r bg-white overflow-y-auto z-20 shadow-lg relative flex-shrink-0">
           <Editor 
             data={data} 
             onChange={setData} 
@@ -126,31 +118,43 @@ const App: React.FC = () => {
           />
         </aside>
 
-        {/* 프리뷰 영역: 남은 공간을 차지 */}
-        <section className="flex-1 bg-gray-200 overflow-y-auto relative p-4 md:p-8">
-           <div className="flex flex-col items-center min-w-min">
-              {/* 실제 800px 결과물을 모바일 화면 크기에 맞게 축소해서 보여주는 컨테이너 */}
-              <div className="max-w-full overflow-x-auto lg:overflow-visible shadow-2xl rounded-lg overflow-hidden origin-top scale-[0.5] sm:scale-[0.7] md:scale-100">
+        {/* 프리뷰 (우측) - 독립 스크롤 (가로/세로 모두 가능) */}
+        <section className="flex-1 bg-gray-100 overflow-auto relative p-8 flex justify-center">
+           <div className="flex flex-col items-center gap-10 min-w-[800px] pb-20">
+              {/* 상세페이지 프리뷰 */}
+              <div className="shadow-2xl bg-white">
                  <Preview data={data} ref={detailRef} />
               </div>
-              
-              {/* 썸네일 영역 */}
-              <div className="mt-12 p-6 bg-white shadow-lg rounded-2xl border border-gray-200 w-full max-w-[800px]">
-                  <h3 className="text-sm font-bold mb-6 text-gray-400 text-center uppercase tracking-widest">Thumbnail Variants</h3>
-                  <div className="flex items-center gap-6 flex-wrap justify-center">
-                      {THUMBNAIL_SIZES.map((size, index) => (
-                          <div key={size} className="flex flex-col items-center gap-2">
-                              <span className="text-[10px] font-bold text-gray-400">{size}px</span>
-                              <div className="scale-75 origin-top">
-                                <ThumbnailPreview data={data} size={size} ref={(el) => { thumbnailRefs.current[index] = el; }} />
-                              </div>
+
+              {/* 썸네일 프리뷰 */}
+              <div className="bg-white p-6 rounded-xl shadow border w-full max-w-[800px]">
+                 <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase text-center">Thumbnail Check</h3>
+                 <div className="flex justify-center gap-4 flex-wrap">
+                    {THUMBNAIL_SIZES.map((size, i) => (
+                       <div key={size} className="flex flex-col items-center gap-2">
+                          <div style={{ width: 100, height: 100 }} className="border bg-gray-50 overflow-hidden relative">
+                             <div className="origin-top-left" style={{ transform: `scale(${100/size})` }}>
+                                <ThumbnailPreview data={data} size={size} ref={el => thumbnailRefs.current[i] = el} />
+                             </div>
                           </div>
-                      ))}
-                  </div>
+                          <span className="text-xs text-gray-500">{size}px</span>
+                       </div>
+                    ))}
+                 </div>
               </div>
            </div>
         </section>
       </main>
+
+      {/* 로딩 인디케이터 */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/30 z-[100] flex items-center justify-center backdrop-blur-[2px]">
+           <div className="bg-white px-8 py-6 rounded-lg shadow-xl flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+              <p className="font-bold text-gray-800">AI가 문구를 작성 중입니다...</p>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

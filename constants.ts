@@ -1,13 +1,12 @@
-// constants.ts
-
 import { ProductData } from './types';
 
-export const DEFAULT_THEME_COLOR = '#E11D48'; // Rose 600
+// 기본 테마 컬러 (로즈 레드)
+export const DEFAULT_THEME_COLOR = '#E11D48';
 
 export const INITIAL_PRODUCT_DATA: ProductData = {
   productNameKr: '',
   productNameEn: '',
-  brandName: '',
+  brandName: '', // ✅ 제조사명 필드 (복구됨)
   summaryInfo: {
     feature: '',
     type: '',
@@ -19,53 +18,69 @@ export const INITIAL_PRODUCT_DATA: ProductData = {
   },
   themeColor: DEFAULT_THEME_COLOR,
   
-  // ▼▼▼ [추가된 부분] 빈 옵션 리스트로 시작
-  options: [],
+  options: [], // 옵션 리스트
 
   mainImage: null,
   packageImage: null,
   featureImage: null,
+  
   point1Image1: null,
+  aiPoint1Desc: '',
   point1Image2: null,
+  aiPoint1Desc2: '',
+  point1Image3: null, 
+  aiPoint1Desc3: '',
+  
   point2Image1: null,
+  aiPoint2Desc: '',
   point2Image2: null,
+  aiPoint2Desc2: '',
+  point2Image3: null,
+  aiPoint2Desc3: '',
+  
   sizeImage: null,
   thumbnailImage: null,
+  
   aiSummary: '',
   aiFeatureDesc: '',
-  aiPoint1Desc: '',
-  aiPoint2Desc: ''
 };
 
+// ✅ 컬러 프리셋 30종 (label 속성 추가로 에러 해결)
 export const COLOR_PRESETS = [
-  // 단색
-  { type: 'solid', value: '#111111' },
-  { type: 'solid', value: '#e11d48' },
-  { type: 'solid', value: '#2563eb' },
-  { type: 'solid', value: '#16a34a' },
-  { type: 'solid', value: '#f59e0b' }, // 진한 옐로우
+  // [1] 모노톤 & 베이직
+  { type: 'solid', value: '#000000', label: '시크 블랙' },
+  { type: 'solid', value: '#334155', label: '슬레이트' },
+  { type: 'solid', value: '#64748b', label: '쿨 그레이' },
+  { type: 'solid', value: '#ffffff', label: '퓨어 화이트' },
 
-  // 그라데이션
-  {
-    type: 'gradient',
-    value: 'linear-gradient(90deg, #facc15, #f59e0b)', // 옐로우 → 오렌지
-  },
-  {
-    type: 'gradient',
-    value: 'linear-gradient(90deg, #fde047, #f97316)', // 라이트 옐로우 → 딥 오렌지
-  },
-  {
-    type: 'gradient',
-    value: 'linear-gradient(90deg, #fbbf24, #dc2626)', // 옐로우 → 레드
-  },
-  {
-    type: 'gradient',
-    value: 'linear-gradient(90deg, #22c55e, #16a34a)', // 그린
-  },
-  {
-    type: 'gradient',
-    value: 'linear-gradient(90deg, #3b82f6, #1e3a8a)', // 블루
-  },
+  // [2] 시그니처 (레드/옐로우)
+  { type: 'solid', value: '#e11d48', label: '로즈 레드' },
+  { type: 'solid', value: '#ef4444', label: '비비드 레드' },
+  { type: 'solid', value: '#dc2626', label: '딥 레드' },
+  { type: 'solid', value: '#facc15', label: '바나나 옐로우' },
+  { type: 'solid', value: '#f59e0b', label: '앰버 골드' },
+
+  // [3] 무드별 컬러 (핑크/퍼플/블루)
+  { type: 'solid', value: '#f472b6', label: '핫 핑크' },
+  { type: 'solid', value: '#db2777', label: '마젠타' },
+  { type: 'solid', value: '#c084fc', label: '라벤더' },
+  { type: 'solid', value: '#7c3aed', label: '로얄 퍼플' },
+  { type: 'solid', value: '#3b82f6', label: '테크 블루' },
+  { type: 'solid', value: '#0ea5e9', label: '스카이 블루' },
+  { type: 'solid', value: '#10b981', label: '민트 그린' },
+  { type: 'solid', value: '#059669', label: '포레스트' },
+
+  // [4] 고급스러운 그라데이션
+  { type: 'gradient', value: 'linear-gradient(135deg, #facc15 0%, #f59e0b 100%)', label: '골드 그라데이션' },
+  { type: 'gradient', value: 'linear-gradient(135deg, #fecaca 0%, #ef4444 100%)', label: '레드 페이드' },
+  { type: 'gradient', value: 'linear-gradient(135deg, #e9d5ff 0%, #a855f7 100%)', label: '퍼플 헤이즈' },
+  { type: 'gradient', value: 'linear-gradient(135deg, #bfdbfe 0%, #3b82f6 100%)', label: '오션 블루' },
+  { type: 'gradient', value: 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)', label: '네이처 그린' },
+  { type: 'gradient', value: 'linear-gradient(135deg, #000000 0%, #434343 100%)', label: '메탈릭 블랙' },
+  { type: 'gradient', value: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)', label: '피치 캔디' },
+  { type: 'gradient', value: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', label: '유니콘 드림' },
+  { type: 'gradient', value: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)', label: '아쿠아 스플래시' },
+  { type: 'gradient', value: 'linear-gradient(120deg, #f6d365 0%, #fda085 100%)', label: '선셋 오렌지' },
 ];
 
-export const THUMBNAIL_SIZES = [202, 400, 500];
+export const THUMBNAIL_SIZES = [202, 400, 500, 600, 1000];
