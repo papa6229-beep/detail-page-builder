@@ -1,15 +1,22 @@
-import { ProductData } from "../types";
+/// <reference types="vite/client" />  <-- 1. 이 줄 추가
+import { ProductData } from "../types"; // <-- 2. 원래 있던 코드
 
-const OPENROUTER_API_KEY = "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"; 
+
+// ✅ 중요: 코드가 Vercel 설정을 바라보게 변경했습니다.
+// 여기에 키를 직접 적지 마세요!
+const OPENROUTER_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 export const generateCopywriting = async (
   data: ProductData
 ): Promise<Partial<ProductData>> => {
 
-  // 1. 활성화된 슬롯과 이미지 매핑 정보를 구성합니다.
+  if (!OPENROUTER_API_KEY) {
+    alert("API 키가 없습니다! Vercel 환경변수 설정을 확인해주세요.");
+    throw new Error("API Key Missing");
+  }
+
   const activeSlots: string[] = ["[FEATURE]", "[POINT1_1]"];
   
-  // 이미지 설명을 위한 가이드 텍스트
   let imageGuide = `
 [이미지 매핑 정보]
 1. Main Image: 전체 컨셉
@@ -17,7 +24,7 @@ export const generateCopywriting = async (
 `;
 
   let structureGuide = `[FEATURE]\n(메인 특징 요약)\n[POINT1_1]\n(포인트1-1 설명)\n`;
-  let imgCount = 2; // 메인, 포인트1-1은 기본
+  let imgCount = 2; 
 
   // Point 1-2
   if (data.point1Image2 || data.aiPoint1Desc2) { 
@@ -82,7 +89,6 @@ ${Array.isArray(data.summaryInfo) ? data.summaryInfo.join("\n") : JSON.stringify
 위 정보를 바탕으로, 각 이미지를 분석하여 찰떡같은 문구를 써주세요.
 `;
 
-  // ✅ 메시지 구성 (이미지 순서를 엄격하게 지켜서 전송)
   let messages: any[] = [{ role: "system", content: systemPrompt }];
   const contentParts: any[] = [{ type: "text", text: userTextPrompt }];
 
@@ -92,12 +98,11 @@ ${Array.isArray(data.summaryInfo) ? data.summaryInfo.join("\n") : JSON.stringify
     }
   };
 
-  // ⚠️ 순서 중요: 위에서 정의한 imageGuide 순서와 100% 일치해야 함
-  addImageToPrompt(data.mainImage);      // 1번
-  addImageToPrompt(data.point1Image1);   // 2번
-  if(activeSlots.includes("[POINT1_2]")) addImageToPrompt(data.point1Image2); // 3번 (있으면)
-  if(activeSlots.includes("[POINT1_3]")) addImageToPrompt(data.point1Image3); // 4번 (있으면)
-  if(activeSlots.includes("[POINT2_1]")) addImageToPrompt(data.point2Image1); // ...
+  addImageToPrompt(data.mainImage);      
+  addImageToPrompt(data.point1Image1);   
+  if(activeSlots.includes("[POINT1_2]")) addImageToPrompt(data.point1Image2); 
+  if(activeSlots.includes("[POINT1_3]")) addImageToPrompt(data.point1Image3); 
+  if(activeSlots.includes("[POINT2_1]")) addImageToPrompt(data.point2Image1); 
   if(activeSlots.includes("[POINT2_2]")) addImageToPrompt((data as any).point2Image2);
   if(activeSlots.includes("[POINT2_3]")) addImageToPrompt((data as any).point2Image3);
 
@@ -124,7 +129,6 @@ ${Array.isArray(data.summaryInfo) ? data.summaryInfo.join("\n") : JSON.stringify
     const json = await res.json();
     const text: string = json.choices?.[0]?.message?.content || "";
     
-    // 파싱
     const extract = (tag: string) => {
       const regex = new RegExp(`\\${tag}([\\s\\S]*?)(\\[|$)`, 'i');
       const match = text.match(regex);
