@@ -22,7 +22,13 @@ const App: React.FC = () => {
     setIsLoading(true);
     try {
       const aiResult = await generateCopywriting(data);
-      setData(prev => ({ ...prev, ...aiResult }));
+      setData(prev => ({
+  ...prev,
+  aiSummary: prev.aiSummary || aiResult.aiSummary,
+  aiFeatureDesc: aiResult.aiFeatureDesc,
+  aiPoint1Desc: aiResult.aiPoint1Desc,
+  aiPoint2Desc: aiResult.aiPoint2Desc,
+}));
     } catch (error) {
       console.error(error);
       alert('AI 문구 생성 중 오류가 발생했습니다.');

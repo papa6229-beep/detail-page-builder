@@ -3,9 +3,48 @@
 import React, { forwardRef } from 'react';
 import { ProductData } from '../types';
 
+const renderHighlightText = (text: string, themeColor: string) => {
+  const parts = text.split(/(##.*?##)/g);
+
+  return parts.map((part, i) => {
+    if (part.startsWith('##') && part.endsWith('##')) {
+      return (
+        <span
+          key={i}
+          style={{ color: themeColor, fontWeight: 600 }}
+        >
+          {part.replace(/##/g, '')}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+};
+
+
+
 interface PreviewProps {
   data: ProductData;
 }
+
+const formatSummaryLines = (text: string): string[] => {
+  if (!text) return ['', '', ''];
+
+  const lines = text
+    .split('\n')                 // 엔터 기준
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => line.slice(0, 11)) // ✅ 한 줄당 11글자 제한
+    .slice(0, 3);                // 최대 3줄
+
+  while (lines.length < 3) {
+    lines.push('');
+  }
+
+  return lines;
+};
+
+
 
 const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
   const {
@@ -138,11 +177,11 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         {/* 상품 핵심 요약 영역 (text-5xl -> text-4xl로 조정) */}
         <section className="py-24 px-10 flex flex-col items-center text-center">
           <div className="w-20 h-1 bg-gray-200 mb-12"></div>
-          <div className="space-y-6 max-w-3xl">
-            {aiSummary.split('\n').map((line, i) => (
+          <div className="space-y-3 max-w-3xl">
+            {formatSummaryLines(aiSummary).map((line, i) => (
               <p 
                 key={i} 
-                className="text-4xl font-black leading-tight tracking-tight" 
+                className="text-7xl font-extrabold leading-[1.15] tracking-tight" 
                 style={{ color: i % 2 === 0 ? themeColor : '#1f2937' }}
               >
                 {line || "상품의 핵심 특징이 여기에 표시됩니다."}
@@ -184,8 +223,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             </div>
             <div className="max-w-3xl mx-auto text-center">
               {/* 설명 문구 크기 조정 (text-3xl -> text-2xl) */}
-              <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-                {aiFeatureDesc || "메인 특징에 대한 설명이 들어가는 공간입니다."}
+              <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+                {renderHighlightText(aiFeatureDesc, themeColor)}
               </p>
             </div>
           </div>
@@ -223,8 +262,11 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
               )}
             </div>
             <div className="max-w-3xl mx-auto text-center mb-20">
-              <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-                {aiPoint1Desc || "첫 번째 포인트에 대한 상세 설명이 들어갑니다."}
+              <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+                {renderHighlightText(
+  aiPoint1Desc || "첫 번째 포인트에 대한 상세 설명이 들어갑니다.",
+  themeColor
+)}
               </p>
             </div>
 {point1Image2 && (
@@ -241,8 +283,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             {/* 확장 구조 */}
             {(data as any).aiPoint1Desc2 && (
               <div className="max-w-3xl mx-auto text-center mt-20 mb-20">
-                <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-                  {(data as any).aiPoint1Desc2}
+                <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+                  {renderHighlightText((data as any).aiPoint1Desc2, themeColor)}
                 </p>
               </div>
             )}
@@ -258,8 +300,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
 {(data as any).aiPoint1Desc3 && (
   <div className="max-w-3xl mx-auto text-center mt-0 mb-20">
-    <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-      {(data as any).aiPoint1Desc3}
+    <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+      {renderHighlightText((data as any).aiPoint1Desc3, themeColor)}
     </p>
   </div>
 )}
@@ -312,8 +354,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
     {aiPoint2Desc && (
       <div className="max-w-3xl mx-auto text-center mb-20">
-        <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-          {aiPoint2Desc}
+        <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+          {renderHighlightText((data as any).aiPoint2Desc, themeColor)}
         </p>
       </div>
     )}
@@ -327,8 +369,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
     {(data as any).aiPoint2Desc2 && (
       <div className="max-w-3xl mx-auto text-center mb-20">
-        <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-          {(data as any).aiPoint2Desc2}
+        <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+          {renderHighlightText((data as any).aiPoint2Desc2, themeColor)}
         </p>
       </div>
     )}
@@ -338,12 +380,12 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
       <div className="w-full bg-gray-50 mb-12 overflow-hidden">
         <img src={(data as any).point2Image3} className="w-full h-auto block" alt="Point 2-3" />
       </div>
-    )}
+    )} 
 
     {(data as any).aiPoint2Desc3 && (
       <div className="max-w-3xl mx-auto text-center">
-        <p className="text-2xl leading-relaxed text-gray-800 font-black whitespace-pre-line">
-          {(data as any).aiPoint2Desc3}
+        <p className="text-lg leading-relaxed text-gray-700 font-normal whitespace-pre-line">
+          {renderHighlightText((data as any).aiPoint2Desc3, themeColor)}
         </p>
       </div>
     )}
