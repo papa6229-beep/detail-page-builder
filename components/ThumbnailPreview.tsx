@@ -103,6 +103,21 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
           bananamall.co.kr
         </div>
       </div>
+
+      {/* 3. 패키지 이미지 오버레이 (우측 하단) */}
+      {(data.packageImage && (data.isPackageImageEnabled ?? true)) && (
+        <img
+          src={data.packageImage}
+          className="absolute z-20 object-contain"
+          alt="Package Overlay"
+          style={{
+            maxWidth: '20%',
+            height: 'auto',
+            bottom: `${12 * scale}px`,
+            right: `${12 * scale}px`,
+          }}
+        />
+      )}
     </div>
   );
 });

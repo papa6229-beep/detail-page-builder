@@ -3,6 +3,9 @@
 import React, { forwardRef } from 'react';
 import { ProductData } from '../types';
 
+// ✅ 그라데이션 여부 체크 헬퍼
+const isGradient = (color: string) => color.toLowerCase().includes('gradient');
+
 // ✅ 텍스트 강조 렌더링 함수 (##강조##)
 const renderHighlightText = (text: string, themeColor: string) => {
   if (!text) return null;
@@ -13,7 +16,17 @@ const renderHighlightText = (text: string, themeColor: string) => {
       return (
         <span
           key={i}
-          style={{ color: themeColor, fontWeight: 700 }}
+          style={isGradient(themeColor) ? {
+            backgroundImage: themeColor,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            color: 'transparent',
+            fontWeight: 700
+          } : { 
+            color: themeColor, 
+            fontWeight: 700 
+          }}
         >
           {part.replace(/##/g, '')}
         </span>
@@ -89,7 +102,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
               style={{
                 fontSize: '200px',
                 fontWeight: 900,
-                color: themeColor,
+                color: isGradient(themeColor) ? '#000' : themeColor, // 배경 숫자는 그라데이션 적용 시 너무 복잡해지므로 흑백 처리 혹은 투명도 조절
                 opacity: 0.05,
                 lineHeight: 1,
                 fontFamily: 'Arial, sans-serif'
@@ -126,7 +139,14 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
       >
         {/* 1. Header 영역 */}
         <header className="pt-24 pb-16 px-10 text-center flex flex-col items-center">
-          <h1 className="text-5xl font-black mb-6 tracking-tight leading-tight break-keep" style={{ color: themeColor }}>
+          <h1 className="text-5xl font-black mb-6 tracking-tight leading-tight break-keep" 
+            style={isGradient(themeColor) ? {
+                backgroundImage: themeColor,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                color: 'transparent'
+            } : { color: themeColor }}>
             {productNameKr || "상품명을 입력하세요"}
           </h1>
           <p className="font-montserrat text-2xl font-bold tracking-[0.15em] text-gray-400 mb-12 uppercase">
@@ -149,7 +169,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           <div className="rounded-2xl overflow-hidden shadow-sm bg-white border border-gray-100">
             <div 
               className="py-5 px-6 text-white font-bold text-center text-2xl tracking-wider"
-              style={{ background: `linear-gradient(90deg, ${themeColor} 0%, ${themeColor}DD 100%)` }}
+              style={{ background: isGradient(themeColor) ? themeColor : `linear-gradient(90deg, ${themeColor} 0%, ${themeColor}DD 100%)` }}
             >
               PRODUCT SPECIFICATION
             </div>
@@ -173,34 +193,76 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             </div>
           </div>
 
-         <div className="mt-20 flex flex-col items-center">
-  {/* ▼ 수정됨: w-[400px] 고정을 풀고, 내부 이미지 크기에 맞춰 박스가 늘어나도록 변경 */}
-  <div className="bg-white shadow-xl rounded-xl overflow-hidden mb-8 border border-gray-100 transform rotate-1 hover:rotate-0 transition-transform duration-500 flex items-center justify-center">
-    {packageImage ? (
-      /* ▼ 핵심 수정: 가로 최대 400px OR 세로 최대 550px (둘 중 먼저 닿는 쪽에 맞춤) */
-      <img 
-        src={packageImage} 
-        className="block w-auto h-auto max-w-[400px] max-h-[550px]" 
-        alt="Package" 
-      />
-    ) : (
-      /* 이미지가 없을 땐 기본 박스 크기 유지 */
-      <div className="w-[400px] aspect-square flex items-center justify-center bg-gray-100">
-        <span className="text-gray-300 font-bold">PACKAGE IMAGE</span>
-      </div>
-    )}
-  </div>
-  
-  <div className="text-center">
-    <h4 className="text-2xl font-black mb-1" style={{ color: themeColor }}>{productNameKr}</h4>
-    <p className="text-base font-bold tracking-[0.3em] text-gray-300 uppercase">Package Design</p>
-  </div>
-</div>
+
         </section>
 
         {/* 3. 옵션 (있을 때만) */}
+
+
+    {/* 4. 핵심 3줄 요약 (가장 임팩트 있는 구간) */}
+        {/* ✅ 수정됨: py-0 -> pt-0 pb-40 (위는 붙이고, 아래는 넉넉하게 벌림) */}
+        <section className="pt-0 pb-10 px-10 flex flex-col items-center text-center bg-white">
+          <div className="space-y-0 max-w-3xl">
+            {formatSummaryLines(data.aiSummary).map((line, i) => (
+              <p 
+                key={i} 
+                className="text-5xl font-black leading-tight tracking-tighter word-break-keep" 
+                style={
+                    (i % 2 === 0) ? (
+                        isGradient(data.themeColor) ? {
+                            backgroundImage: data.themeColor,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text',
+                            color: 'transparent'
+                        } : { color: data.themeColor }
+                    ) : { color: '#1f2937' }
+                }
+              >
+                {line || (i === 0 ? "상품의 핵심 특징이" : i === 1 ? "여기에 강렬하게" : "표시됩니다.")}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        {/* 4-2. 패키지 디자인 (위치 이동됨) */}
+        <section className="pb-32 px-10 flex flex-col items-center bg-white">
+             {(data.isPackageImageEnabled ?? true) && (
+              <>
+                <div className="bg-white shadow-xl rounded-xl overflow-hidden mb-8 border border-gray-100 transform rotate-1 hover:rotate-0 transition-transform duration-500 flex items-center justify-center">
+                    {packageImage ? (
+                    <img 
+                        src={packageImage} 
+                        className="block w-auto h-auto max-w-[400px] max-h-[550px]" 
+                        alt="Package" 
+                    />
+                    ) : (
+                    <div className="w-[400px] aspect-square flex items-center justify-center bg-gray-100">
+                        <span className="text-gray-300 font-bold">PACKAGE IMAGE</span>
+                    </div>
+                    )}
+                </div>
+                
+                <div className="text-center">
+                    <h4 className="text-2xl font-black mb-1" 
+                         style={isGradient(themeColor) ? {
+                            backgroundImage: themeColor,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text',
+                            color: 'transparent'
+                        } : { color: themeColor }}>
+                        {productNameKr}
+                    </h4>
+                    <p className="text-base font-bold tracking-[0.3em] text-gray-300 uppercase">Package Design</p>
+                </div>
+              </>
+          )}
+        </section>
+
+        {/* 3. 옵션 (위치 이동됨: AI Summary -> Package Image -> Options) */}
         {options.length > 0 && (
-          <section className="px-10 py-20 bg-white border-b border-gray-100">
+          <section className="px-10 pb-20 pt-10 bg-white border-b border-gray-100">
              <div className="flex items-center justify-center mb-12 gap-4 opacity-50">
                 <div className="h-px w-12 bg-gray-300"></div>
                 <h3 className="text-xl font-bold tracking-widest text-gray-800 uppercase">Option Check</h3>
@@ -224,29 +286,13 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </section>
         )}
 
-    {/* 4. 핵심 3줄 요약 (가장 임팩트 있는 구간) */}
-        {/* ✅ 수정됨: py-0 -> pt-0 pb-40 (위는 붙이고, 아래는 넉넉하게 벌림) */}
-        <section className="pt-0 pb-40 px-10 flex flex-col items-center text-center bg-white">
-          <div className="space-y-0 max-w-3xl">
-            {formatSummaryLines(data.aiSummary).map((line, i) => (
-              <p 
-                key={i} 
-                className="text-5xl font-black leading-tight tracking-tighter word-break-keep" 
-                style={{ color: i % 2 === 0 ? data.themeColor : '#1f2937' }}
-              >
-                {line || (i === 0 ? "상품의 핵심 특징이" : i === 1 ? "여기에 강렬하게" : "표시됩니다.")}
-              </p>
-            ))}
-          </div>
-        </section>
-
         {/* 5. 메인 특징 (Feature) */}
         <section className="pb-32">
           {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-12">
              <span className="text-sm font-bold tracking-[0.5em] text-gray-300 uppercase mb-2">Key Feature</span>
             <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-lg"
-              style={{ background: data.themeColor }}
+              style={{ background: themeColor }}
             >
               {data.productNameKr || "상품명"}
             </div>
@@ -359,7 +405,15 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
           <div className="px-10 text-center">
             {/* 무게 뱃지 */}
-            <div className="inline-flex items-center justify-center px-12 py-6 bg-white border-2 rounded-full shadow-lg mb-16" style={{ borderColor: themeColor }}>
+            <div 
+                className="inline-flex items-center justify-center px-12 py-6 bg-white rounded-full shadow-lg mb-16" 
+                style={isGradient(themeColor) ? {
+                    background: `linear-gradient(#fff, #fff) padding-box, ${themeColor} border-box`,
+                    border: '2px solid transparent'
+                } : { 
+                    border: `2px solid ${themeColor}` 
+                }}
+            >
               <span className="text-lg font-bold text-gray-400 mr-4 uppercase tracking-widest">Weight</span>
               <span className="text-4xl font-black text-gray-900">{summaryInfo.weight || "-"}</span>
             </div>

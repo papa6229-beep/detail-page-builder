@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
-import html2canvas from 'html2canvas'; 
+import { toJpeg } from 'html-to-image'; 
 import { ProductData } from './types';
 import { INITIAL_PRODUCT_DATA, THUMBNAIL_SIZES } from './constants';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import Editor from './components/Editor';
 import Preview from './components/Preview';
 import ThumbnailPreview from './components/ThumbnailPreview';
@@ -10,6 +12,7 @@ import { generateCopywriting } from './services/geminiService';
 const App: React.FC = () => {
   const [data, setData] = useState<ProductData>(INITIAL_PRODUCT_DATA);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('처리 중입니다...'); // ✅ 로딩 메시지 상태 추가
   
   const detailRef = useRef<HTMLDivElement>(null);
   const thumbnailRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -21,6 +24,7 @@ const App: React.FC = () => {
     }
 
     setIsLoading(true);
+    setLoadingMessage('AI가 문구를 작성 중입니다...'); // ✅ 메시지 설정
     try {
       const aiResult = await generateCopywriting(data);
       setData(prev => ({ ...prev, ...aiResult }));
@@ -35,29 +39,22 @@ const App: React.FC = () => {
   const exportDetailPage = async () => {
     if (!detailRef.current) return;
     setIsLoading(true);
+    setLoadingMessage('전체 이미지를 저장 중입니다...');
     try {
       const element = detailRef.current;
-      await new Promise(resolve => setTimeout(resolve, 800)); 
-      const fullHeight = element.scrollHeight; 
-      const canvas = await html2canvas(element, {
-        scale: 1.5,
-        useCORS: true,
-        allowTaint: false,
-        width: 800,
-        height: fullHeight,
-        windowWidth: 800,
-        windowHeight: fullHeight,
-        x: 0, y: 0, scrollY: 0,
-        backgroundColor: '#ffffff' 
-      });
-      const image = canvas.toDataURL('image/jpeg', 0.9); 
+      await new Promise(resolve => setTimeout(resolve, 800)); // 이미지 로딩 대기
+
+      // html-to-image 사용
+      const dataUrl = await toJpeg(element, { quality: 0.9, backgroundColor: '#ffffff' });
+      
       const link = document.createElement('a');
       link.download = `detail_page_${data.productNameKr || 'product'}.jpg`;
-      link.href = image;
+      link.href = dataUrl;
       link.click();
     } catch (err) {
       console.error('Export failed', err);
-      alert('이미지 저장 실패');
+      // 에러 메시지 상세 출력
+      alert(`이미지 저장 실패: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
@@ -65,25 +62,55 @@ const App: React.FC = () => {
 
   const exportThumbnails = async () => {
     setIsLoading(true);
+    setLoadingMessage('썸네일을 압축 저장 중입니다...');
     try {
+      const zip = new JSZip();
+      
       for (let i = 0; i < THUMBNAIL_SIZES.length; i++) {
         const ref = thumbnailRefs.current[i];
         if (ref) {
           const size = THUMBNAIL_SIZES[i];
-          const canvas = await html2canvas(ref, {
-            scale: 1, useCORS: true, backgroundColor: '#ffffff',
-            width: size, height: size, windowWidth: size, windowHeight: size
-          });
-          const image = canvas.toDataURL('image/jpeg', 1.0);
-          const link = document.createElement('a');
-          link.download = `thumbnail_${size}.jpg`;
-          link.href = image;
-          link.click();
-          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          // html-to-image 사용
+          // width/height 강제 지정 style이 있어도 캡쳐는 보 보이는대로 잘 됨
+          const dataUrl = await toJpeg(ref, { quality: 1.0, backgroundColor: '#ffffff' });
+          
+          // dataURL에서 base64 데이터만 추출
+          const imageData = dataUrl.split(',')[1];
+          zip.file(`thumbnail_${size}.jpg`, imageData, { base64: true });
         }
       }
+      
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `thumbnails_${data.productNameKr || 'product'}.zip`);
+      
     } catch (err) {
-      alert('썸네일 저장 실패');
+      console.error(err);
+      alert(`썸네일 저장 실패: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ 개별 썸네일 다운로드 함수
+  const downloadSingleThumbnail = async (index: number, size: number) => {
+    const ref = thumbnailRefs.current[index];
+    if (!ref) return;
+
+    setIsLoading(true);
+    setLoadingMessage(`썸네일(${size}px) 저장 중...`);
+    
+    try {
+      const dataUrl = await toJpeg(ref, { quality: 1.0, backgroundColor: '#ffffff' });
+      
+      const link = document.createElement('a');
+      link.download = `thumbnail_${size}_${data.productNameKr || 'product'}.jpg`;
+      link.href = dataUrl;
+      link.click();
+      
+    } catch (error) {
+       console.error(error);
+       alert(`이미지 저장 실패: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsLoading(false);
     }
@@ -132,12 +159,20 @@ const App: React.FC = () => {
                  <div className="flex justify-center gap-4 flex-wrap">
                     {THUMBNAIL_SIZES.map((size, i) => (
                        <div key={size} className="flex flex-col items-center gap-2">
-                          <div style={{ width: 100, height: 100 }} className="border bg-gray-50 overflow-hidden relative">
-                             <div className="origin-top-left" style={{ transform: `scale(${100/size})` }}>
+                          <div style={{ width: 200, height: 200 }} className="border bg-gray-50 overflow-hidden relative shadow-sm rounded-lg">
+                             <div className="origin-top-left" style={{ transform: `scale(${200/size})` }}>
                                 <ThumbnailPreview data={data} size={size} ref={el => thumbnailRefs.current[i] = el} />
                              </div>
                           </div>
-                          <span className="text-xs text-gray-500">{size}px</span>
+                          <div className="flex flex-col items-center gap-1">
+                             <span className="text-xs text-gray-500">{size}px</span>
+                             <button
+                               onClick={() => downloadSingleThumbnail(i, size)}
+                               className="px-3 py-1 bg-gray-800 text-white text-xs rounded hover:bg-black transition-colors"
+                             >
+                               다운로드
+                             </button>
+                          </div>
                        </div>
                     ))}
                  </div>
@@ -151,7 +186,7 @@ const App: React.FC = () => {
         <div className="fixed inset-0 bg-black/30 z-[100] flex items-center justify-center backdrop-blur-[2px]">
            <div className="bg-white px-8 py-6 rounded-lg shadow-xl flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
-              <p className="font-bold text-gray-800">AI가 문구를 작성 중입니다...</p>
+               <p className="font-bold text-gray-800">{loadingMessage}</p> {/* ✅ 동적 메시지 표시 */}
            </div>
         </div>
       )}

@@ -42,6 +42,9 @@ export interface ProductData {
   sizeImage: string | null;
   thumbnailImage: string | null;
 
+  // Toggle Flags
+  isPackageImageEnabled?: boolean;
+
   // AI Generated Text
   aiSummary: string;
   aiFeatureDesc: string;

@@ -253,10 +253,27 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
       <section className="space-y-4" onClick={() => scrollTo('preview-main')}>
         <h2 className="text-lg font-black text-gray-900 border-b pb-2">🖼️ 메인 이미지</h2>
         <ImageUploader label="Main Image" value={data.mainImage} targetId="preview-main" onChange={handleImageChange('mainImage')} />
-        <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-1"><ImageUploader label="Package Image" value={data.packageImage} isSmall={true} targetId="preview-main" onChange={handleImageChange('packageImage')} /></div>
-             <div className="col-span-1 flex items-center justify-center text-xs text-gray-400">패키지 이미지는<br/>작게 출력됩니다.</div>
+        
+        <div className="flex justify-between items-center mt-6 mb-2">
+            <h3 className="text-sm font-bold text-gray-800">📦 패키지 이미지 설정</h3>
+            <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={data.isPackageImageEnabled ?? true} 
+                    onChange={(e) => onChange(prev => ({ ...prev, isPackageImageEnabled: e.target.checked }))} 
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <span className="ml-3 text-sm font-medium text-gray-900">{data.isPackageImageEnabled ? 'ON' : 'OFF'}</span>
+            </label>
         </div>
+
+        {data.isPackageImageEnabled && (
+            <div className="grid grid-cols-2 gap-4 animate-fade-in-down">
+                <div className="col-span-1"><ImageUploader label="Package Image" value={data.packageImage} isSmall={true} targetId="preview-main" onChange={handleImageChange('packageImage')} /></div>
+                 <div className="col-span-1 flex items-center justify-center text-xs text-gray-400">패키지 이미지는<br/>작게 출력됩니다.</div>
+            </div>
+        )}
       </section>
 
       {/* 4. 옵션 */}

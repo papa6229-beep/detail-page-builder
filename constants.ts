@@ -40,6 +40,8 @@ export const INITIAL_PRODUCT_DATA: ProductData = {
   
   sizeImage: null,
   thumbnailImage: null,
+
+  isPackageImageEnabled: true,
   
   aiSummary: '',
   aiFeatureDesc: '',
@@ -83,4 +85,4 @@ export const COLOR_PRESETS = [
   { type: 'gradient', value: 'linear-gradient(120deg, #f6d365 0%, #fda085 100%)', label: '선셋 오렌지' },
 ];
 
-export const THUMBNAIL_SIZES = [202, 400, 500, 600, 1000];
+export const THUMBNAIL_SIZES = [202, 400, 500];
