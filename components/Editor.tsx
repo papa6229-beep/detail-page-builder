@@ -223,15 +223,15 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
         </div>
         <div>
            <label className="block text-sm font-bold text-gray-700 mb-1">제조사/브랜드명</label>
-           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium text-gray-600" value={data.brandName} onChange={handleTextChange('brandName')} placeholder="예: BANANA MALL" />
+           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium text-gray-600" value={data.brandName} onChange={handleTextChange('brandName')} onFocus={() => scrollTo('preview-top')} placeholder="예: BANANA MALL" />
         </div>
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-1">상품명 (한글)</label>
-          <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-bold" value={data.productNameKr} onChange={handleTextChange('productNameKr')} placeholder="예: 바나나 오나홀" />
+          <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-bold" value={data.productNameKr} onChange={handleTextChange('productNameKr')} onFocus={() => scrollTo('preview-top')} placeholder="예: 바나나 오나홀" />
         </div>
         <div>
            <label className="block text-sm font-bold text-gray-700 mb-1">영문 상품명</label>
-           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium font-montserrat" value={data.productNameEn} onChange={handleTextChange('productNameEn')} placeholder="BANANA ONAHOLE" />
+           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium font-montserrat" value={data.productNameEn} onChange={handleTextChange('productNameEn')} onFocus={() => scrollTo('preview-top')} placeholder="BANANA ONAHOLE" />
         </div>
       </section>
 
@@ -247,6 +247,18 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
             ))}
          </div>
          <Textarea label="AI 생성 참고용 핵심 요약" value={data.aiSummary} placeholder="예: 강력한 진동, 부드러운 실리콘 재질..." rows={2} targetId="preview-spec" onChange={handleTextChange('aiSummary')} />
+         
+         {/* [추가] 동영상 삽입 (800x450) */}
+         <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
+            <ImageUploader 
+                label="동영상 삽입 (이미지)" 
+                subLabel="800x450 권장" 
+                value={data.videoInsertImage} 
+                targetId="preview-spec" 
+                onChange={handleImageChange('videoInsertImage')} 
+                onDelete={() => onChange(prev => ({ ...prev, videoInsertImage: null }))}
+            />
+         </div>
       </section>
 
       {/* 3. 메인 이미지 */}

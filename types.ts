@@ -40,6 +40,7 @@ export interface ProductData {
   point2Image3?: string | null; // [추가] 선택형 이미지 3
 
   sizeImage: string | null;
+  videoInsertImage: string | null; // [추가] 동영상 삽입 (이미지)
   thumbnailImage: string | null;
 
   // Toggle Flags
@@ -71,5 +72,6 @@ export enum ImageType {
   POINT2_2 = 'point2Image2',
   POINT2_3 = 'point2Image3', // [추가]
   SIZE = 'sizeImage',
+  VIDEO_INSERT = 'videoInsertImage', // [추가]
   THUMBNAIL = 'thumbnailImage'
 }

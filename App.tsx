@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { toJpeg } from 'html-to-image'; 
 import { ProductData } from './types';
-import { INITIAL_PRODUCT_DATA, THUMBNAIL_SIZES } from './constants';
+import { INITIAL_PRODUCT_DATA, THUMBNAIL_PRESETS } from './constants';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import Editor from './components/Editor';
@@ -66,18 +66,17 @@ const App: React.FC = () => {
     try {
       const zip = new JSZip();
       
-      for (let i = 0; i < THUMBNAIL_SIZES.length; i++) {
+      for (let i = 0; i < THUMBNAIL_PRESETS.length; i++) {
         const ref = thumbnailRefs.current[i];
         if (ref) {
-          const size = THUMBNAIL_SIZES[i];
+          const preset = THUMBNAIL_PRESETS[i];
           
           // html-to-image 사용
-          // width/height 강제 지정 style이 있어도 캡쳐는 보 보이는대로 잘 됨
           const dataUrl = await toJpeg(ref, { quality: 1.0, backgroundColor: '#ffffff' });
           
           // dataURL에서 base64 데이터만 추출
           const imageData = dataUrl.split(',')[1];
-          zip.file(`thumbnail_${size}.jpg`, imageData, { base64: true });
+          zip.file(`thumbnail_${preset.label}.jpg`, imageData, { base64: true });
         }
       }
       
@@ -93,18 +92,18 @@ const App: React.FC = () => {
   };
 
   // ✅ 개별 썸네일 다운로드 함수
-  const downloadSingleThumbnail = async (index: number, size: number) => {
+  const downloadSingleThumbnail = async (index: number, label: string) => {
     const ref = thumbnailRefs.current[index];
     if (!ref) return;
 
     setIsLoading(true);
-    setLoadingMessage(`썸네일(${size}px) 저장 중...`);
+    setLoadingMessage(`썸네일(${label}) 저장 중...`);
     
     try {
       const dataUrl = await toJpeg(ref, { quality: 1.0, backgroundColor: '#ffffff' });
       
       const link = document.createElement('a');
-      link.download = `thumbnail_${size}_${data.productNameKr || 'product'}.jpg`;
+      link.download = `thumbnail_${label}_${data.productNameKr || 'product'}.jpg`;
       link.href = dataUrl;
       link.click();
       
@@ -157,17 +156,25 @@ const App: React.FC = () => {
               <div className="bg-white p-6 rounded-xl shadow border w-full max-w-[800px]">
                  <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase text-center">Thumbnail Check</h3>
                  <div className="flex justify-center gap-4 flex-wrap">
-                    {THUMBNAIL_SIZES.map((size, i) => (
-                       <div key={size} className="flex flex-col items-center gap-2">
-                          <div style={{ width: 200, height: 200 }} className="border bg-gray-50 overflow-hidden relative shadow-sm rounded-lg">
-                             <div className="origin-top-left" style={{ transform: `scale(${200/size})` }}>
-                                <ThumbnailPreview data={data} size={size} ref={el => thumbnailRefs.current[i] = el} />
+                 <div className="flex justify-center gap-4 flex-wrap">
+                    {THUMBNAIL_PRESETS.map((preset, i) => (
+                       <div key={preset.label} className="flex flex-col items-center gap-2">
+                          {/* 고정된 200px 너비 박스 안에 scale로 축소 표시 */}
+                          <div style={{ width: 200, height: 200 * (preset.height / preset.width) }} className="border bg-gray-50 overflow-hidden relative shadow-sm rounded-lg">
+                             <div className="origin-top-left" style={{ transform: `scale(${200/preset.width})` }}>
+                                <ThumbnailPreview 
+                                  data={data} 
+                                  width={preset.width} 
+                                  height={preset.height} 
+                                  hidePackage={preset.hidePackage}
+                                  ref={el => thumbnailRefs.current[i] = el} 
+                                />
                              </div>
                           </div>
                           <div className="flex flex-col items-center gap-1">
-                             <span className="text-xs text-gray-500">{size}px</span>
+                             <span className="text-xs text-gray-500">{preset.label}</span>
                              <button
-                               onClick={() => downloadSingleThumbnail(i, size)}
+                               onClick={() => downloadSingleThumbnail(i, preset.label)}
                                className="px-3 py-1 bg-gray-800 text-white text-xs rounded hover:bg-black transition-colors"
                              >
                                다운로드
@@ -175,6 +182,7 @@ const App: React.FC = () => {
                           </div>
                        </div>
                     ))}
+                 </div>
                  </div>
               </div>
            </div>

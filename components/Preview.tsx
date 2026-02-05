@@ -138,7 +138,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         style={{ width: '800px', minHeight: '1200px' }}
       >
         {/* 1. Header 영역 */}
-        <header className="pt-24 pb-16 px-10 text-center flex flex-col items-center">
+        <header id="preview-top" className="pt-24 pb-16 px-10 text-center flex flex-col items-center">
           <h1 className="text-5xl font-black mb-6 tracking-tight leading-tight break-keep" 
             style={isGradient(themeColor) ? {
                 backgroundImage: themeColor,
@@ -153,7 +153,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             {productNameEn || "PRODUCT ENGLISH NAME"}
           </p>
           
-          <div className="w-full bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 rounded-lg shadow-inner">
+          <div id="preview-main" className="w-full bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 rounded-lg shadow-inner">
             {mainImage ? (
               <img src={mainImage} className="w-full h-auto block" alt="Main" />
             ) : (
@@ -165,7 +165,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         </header>
 
         {/* 2. 스펙 테이블 & 패키지 */}
-        <section className="px-10 py-20 bg-gray-50">
+        <section id="preview-spec" className="px-10 py-20 bg-gray-50">
           <div className="rounded-2xl overflow-hidden shadow-sm bg-white border border-gray-100">
             <div 
               className="py-5 px-6 text-white font-bold text-center text-2xl tracking-wider"
@@ -225,6 +225,17 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </div>
         </section>
 
+        {/* [추가] 동영상 삽입 이미지 (800x450) */}
+        {data.videoInsertImage && (
+          <section className="pb-10 px-0 flex flex-col items-center bg-white">
+            <img 
+              src={data.videoInsertImage} 
+              className="w-full h-auto aspect-[16/9] object-cover block" 
+              alt="Video Insert" 
+            />
+          </section>
+        )}
+
         {/* 4-2. 패키지 디자인 (위치 이동됨) */}
         <section className="pb-32 px-10 flex flex-col items-center bg-white">
              {(data.isPackageImageEnabled ?? true) && (
@@ -262,7 +273,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
         {/* 3. 옵션 (위치 이동됨: AI Summary -> Package Image -> Options) */}
         {options.length > 0 && (
-          <section className="px-10 pb-20 pt-10 bg-white border-b border-gray-100">
+          <section id="preview-option" className="px-10 pb-20 pt-10 bg-white border-b border-gray-100">
              <div className="flex items-center justify-center mb-12 gap-4 opacity-50">
                 <div className="h-px w-12 bg-gray-300"></div>
                 <h3 className="text-xl font-bold tracking-widest text-gray-800 uppercase">Option Check</h3>
@@ -287,7 +298,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         )}
 
         {/* 5. 메인 특징 (Feature) */}
-        <section className="pb-32">
+        <section id="preview-feature" className="pb-32">
           {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-12">
              <span className="text-sm font-bold tracking-[0.5em] text-gray-300 uppercase mb-2">Key Feature</span>
@@ -317,7 +328,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         </section>
 
         {/* 6. POINT 1 (필수) */}
-        <section className="pb-32">
+        <section id="preview-point1" className="pb-32">
           {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-16">
             <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-lg"
@@ -355,7 +366,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
         {/* 7. POINT 2 (조건부 렌더링) */}
         {isPoint2Active && (
-        <section className="pb-32">
+        <section id="preview-point2" className="pb-32">
            {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-16">
             <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-lg"
@@ -392,7 +403,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         )}
 
         {/* 8. 사이즈 & 인포 */}
-        <section className="pb-32 bg-gray-50 pt-20">
+        <section id="preview-size" className="pb-32 bg-gray-50 pt-20">
           <div className="w-full flex flex-col items-center justify-center mb-12">
             <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-lg"
               style={{ background: data.themeColor }}

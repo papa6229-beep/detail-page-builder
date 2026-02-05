@@ -3,19 +3,21 @@ import { ProductData } from '../types';
 
 interface ThumbnailPreviewProps {
   data: ProductData;
-  size: number;
+  width: number;
+  height: number;
+  hidePackage?: boolean;
 }
 
-const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ data, size }, ref) => {
+const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ data, width, height, hidePackage }, ref) => {
   const image = data.thumbnailImage || data.mainImage;
 
-  // 썸네일 크기에 따른 스케일 비율 계산 (기준: 500px)
-  const scale = size / 500;
+  // 썸네일 크기에 따른 스케일 비율 계산 (기준: 500px 너비)
+  const scale = width / 500;
 
   return (
     <div 
       ref={ref}
-      style={{ width: `${size}px`, height: `${size}px` }}
+      style={{ width: `${width}px`, height: `${height}px` }}
       className="bg-white relative overflow-hidden flex items-center justify-center shrink-0 border border-gray-200 shadow-sm"
     >
       {/* 1. 이미지 영역 (Background Layer) 
@@ -104,8 +106,8 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
         </div>
       </div>
 
-      {/* 3. 패키지 이미지 오버레이 (우측 하단) */}
-      {(data.packageImage && (data.isPackageImageEnabled ?? true)) && (
+      {/* 3. 패키지 이미지 오버레이 (우측 하단) - hidePackage가 false일 때만 표시 */}
+      {(!hidePackage && data.packageImage && (data.isPackageImageEnabled ?? true)) && (
         <img
           src={data.packageImage}
           className="absolute z-20 object-contain"
