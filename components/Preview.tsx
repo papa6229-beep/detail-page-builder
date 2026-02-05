@@ -297,7 +297,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           </section>
         )}
 
-        {/* 5. 메인 특징 (Feature) */}
+        {/* 5. 메인 특징 (Feature) - 조건부 렌더링 */}
+        {(data.featureImage || data.aiFeatureDesc) && (
         <section id="preview-feature" className="pb-32">
           {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-12">
@@ -326,8 +327,10 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             </div>
           </div>
         </section>
+        )}
 
-        {/* 6. POINT 1 (필수) */}
+        {/* 6. POINT 1 (필수 -> 조건부 변경) */}
+        {(data.point1Image1 || data.aiPoint1Desc || (data as any).point1Image2 || (data as any).point1Image3) && (
         <section id="preview-point1" className="pb-32">
           {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-16">
@@ -362,6 +365,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             )}
           </div>
         </section>
+        )}
 
 
         {/* 7. POINT 2 (조건부 렌더링) */}
@@ -402,7 +406,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         </section>
         )}
 
-        {/* 8. 사이즈 & 인포 */}
+        {/* 8. 사이즈 & 인포 - 조건부 렌더링 */}
+        {(data.sizeImage || data.summaryInfo.weight) && (
         <section id="preview-size" className="pb-32 bg-gray-50 pt-20">
           <div className="w-full flex flex-col items-center justify-center mb-12">
             <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-lg"
@@ -416,6 +421,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
           <div className="px-10 text-center">
             {/* 무게 뱃지 */}
+            {data.summaryInfo.weight && (
             <div 
                 className="inline-flex items-center justify-center px-12 py-6 bg-white rounded-full shadow-lg mb-16" 
                 style={isGradient(themeColor) ? {
@@ -426,8 +432,9 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
                 }}
             >
               <span className="text-lg font-bold text-gray-400 mr-4 uppercase tracking-widest">Weight</span>
-              <span className="text-4xl font-black text-gray-900">{summaryInfo.weight || "-"}</span>
+              <span className="text-4xl font-black text-gray-900">{summaryInfo.weight}</span>
             </div>
+            )}
             
             <div className="w-full bg-white rounded-3xl overflow-hidden p-8 mb-8 shadow-sm border border-gray-100">
                {sizeImage ? (
@@ -442,6 +449,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
             </p>
           </div>
         </section>
+        )}
         
         {/* 9. Footer */}
         <footer className="py-20 bg-gray-900 text-center">

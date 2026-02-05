@@ -318,18 +318,38 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
          {/* Feature */}
          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-feature')}>
             <h3 className="font-bold text-gray-800 mb-3">Feature (핵심 특징)</h3>
-            <ImageUploader label="Feature Image" value={data.featureImage} targetId="preview-feature" onChange={handleImageChange('featureImage')} />
-            <Textarea label="AI 설명" value={data.aiFeatureDesc} placeholder="AI 작성 영역" targetId="preview-feature" onChange={handleTextChange('aiFeatureDesc')} />
+            {data.featureImage || data.aiFeatureDesc ? (
+                <>
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-bold text-gray-500">Main</span>
+                        <button onClick={() => { removeSlot('featureImage'); removeSlot('aiFeatureDesc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제</button>
+                    </div>
+                    <ImageUploader label="Feature Image" value={data.featureImage} targetId="preview-feature" onChange={handleImageChange('featureImage')} />
+                    <Textarea label="AI 설명" value={data.aiFeatureDesc} placeholder="AI 작성 영역" targetId="preview-feature" onChange={handleTextChange('aiFeatureDesc')} />
+                </>
+            ) : (
+                <button onClick={() => { enableSlot('featureImage'); enableSlot('aiFeatureDesc'); }} className="w-full py-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50 transition-all">+ Feature 섹션 추가하기</button>
+            )}
          </div>
 
          {/* Point 1 */}
          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-point1')}>
             <h3 className="font-bold text-gray-800 mb-3">Point 01</h3>
-            <ImageUploader label="Image 1-1" value={data.point1Image1} targetId="preview-point1" onChange={handleImageChange('point1Image1')} />
-            <Textarea label="설명 1-1" value={data.aiPoint1Desc} placeholder="AI 작성 영역" targetId="preview-point1" onChange={handleTextChange('aiPoint1Desc')} />
-            
-            {renderSubPoint(2, 'point1', 'preview-point1')}
-            {renderSubPoint(3, 'point1', 'preview-point1')}
+            {data.point1Image1 || data.aiPoint1Desc || (data as any).point1Image2 || (data as any).point1Image3 ? (
+             <>
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-bold text-gray-500">Main</span>
+                    <button onClick={() => { removeSlot('point1Image1'); removeSlot('aiPoint1Desc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제 (전체)</button>
+                </div>
+                <ImageUploader label="Image 1-1" value={data.point1Image1} targetId="preview-point1" onChange={handleImageChange('point1Image1')} />
+                <Textarea label="설명 1-1" value={data.aiPoint1Desc} placeholder="AI 작성 영역" targetId="preview-point1" onChange={handleTextChange('aiPoint1Desc')} />
+                
+                {renderSubPoint(2, 'point1', 'preview-point1')}
+                {renderSubPoint(3, 'point1', 'preview-point1')}
+             </>
+            ) : (
+                <button onClick={() => { enableSlot('point1Image1'); enableSlot('aiPoint1Desc'); }} className="w-full py-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50 transition-all">+ Point 01 섹션 추가하기</button>
+            )}
          </div>
 
          {/* Point 2 */}
@@ -348,7 +368,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                  {renderSubPoint(3, 'point2', 'preview-point2')}
                </>
             ) : (
-               <button onClick={() => { enableSlot('point2Image1'); enableSlot('aiPoint2Desc'); }} className="w-full py-8 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold text-lg hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-all">+ Point 02 섹션 추가하기</button>
+               <button onClick={() => { enableSlot('point2Image1'); enableSlot('aiPoint2Desc'); }} className="w-full py-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-all">+ Point 02 섹션 추가하기</button>
             )}
          </div>
 
@@ -356,8 +376,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-size')}>
             <h2 className="text-md font-bold text-gray-900 mb-3">📏 사이즈 및 썸네일</h2>
             <div className="grid grid-cols-2 gap-4">
-                <ImageUploader label="Size Detail" value={data.sizeImage} targetId="preview-size" onChange={handleImageChange('sizeImage')} />
-                <ImageUploader label="Thumbnail" value={data.thumbnailImage} targetId="preview-size" onChange={handleImageChange('thumbnailImage')} />
+                <ImageUploader label="Size Detail" value={data.sizeImage} targetId="preview-size" onChange={handleImageChange('sizeImage')} onDelete={() => removeSlot('sizeImage')} />
+                <ImageUploader label="Thumbnail" value={data.thumbnailImage} targetId="preview-size" onChange={handleImageChange('thumbnailImage')} onDelete={() => removeSlot('thumbnailImage')} />
             </div>
          </div>
       </section>
