@@ -62,32 +62,43 @@ export const generateCopywriting = async (
   }
 
   const systemPrompt = `
-당신은 '바나나몰'의 수석 카피라이터입니다.
-제공된 이미지들을 순서대로 분석하여 각 섹션에 맞는 상세페이지 문구를 작성하세요.
+ 당신은 '바나나몰'의 수석 카피라이터입니다.
+ 제공된 이미지들과 스펙 정보를 분석하여 판매 실적을 높일 수 있는 매혹적이고 설득력 있는 상세페이지 문구를 작성하세요.
 
-⚠️ [이미지 분석 필승 공략]
-제공된 이미지 순서는 다음과 같습니다:
-${imageGuide}
+ ⚠️ [핵심 작성 목표]
+ 1. **분량 엄수**: 각 섹션(태그)마다 **반드시 4~5줄 분량**으로 작성하세요. (너무 짧으면 안 됩니다).
+ 2. **구매 욕구 자극**: 단순한 설명이 아니라, 고객이 이 글을 읽고 "당장 사고 싶다"는 마음이 들도록 감성적이고 자극적인 표현을 사용하세요.
+ 3. **스펙 활용**: 제공된 요약정보(스펙)를 문구에 자연스럽게 녹여내어 신뢰도를 더하세요. (예: "70g의 가벼움으로..." 등)
 
-각 태그([POINT...])를 작성할 때, 위 순서에 해당하는 이미지를 **반드시** 참고하여 묘사하세요.
-예를 들어 Point 1-2 이미지가 '손으로 늘리는 사진'이라면, [POINT1_2] 내용에 "놀라운 신축성"을 언급해야 합니다.
-물 이미지가 보이면 "위생/세척"으로 해석하세요.
+ ⚠️ [필수 작업 프로세스 (엄수)]
+ 1. **1단계 (이미지 정밀 분석)**: 
+    - 텍스트나 스펙을 먼저 생각하지 말고, **제공된 이미지를 있는 그대로 정밀하게 관찰**하세요.
+    - 이미지가 '리모컨'인지, '케이블'인지, '제품의 특정 돌기'인지 시각적 특징을 먼저 확정하세요.
+ 2. **2단계 (스펙 매칭 및 문구 작성)**:
+    - 1단계에서 파악한 이미지 내용과 '스펙 정보(요약정보)'를 연결하여 문구를 작성하세요.
+    - (예: 이미지에서 '선'이 보이면 -> 스펙의 '충전 방식'을 확인 -> "자석식 충전 케이블"이라고 정확히 명시)
 
-⚠️ [작성 가이드]
-1. 톤앤매너: 성인 문학 스타일 (고급, 관능, 번역투 금지).
-2. 출력 형식: 아래 태그 구조를 엄수할 것.
+ ⭐ **[소품/구성품 해석 가이드]**:
+ - **리모컨** 발견 시 -> 스펙의 '리모컨' 여부와 연결하여 "멀리서도 자유로운 무선 조작" 강조.
+ - **USB 케이블** 발견 시 -> 스펙의 '전원/충전' 정보와 연결하여 "어디서나 간편한 USB 충전" 강조.
+ - **설명서/구성품** 발견 시 -> "알찬 구성품과 가이드"로 해석.
 
-[출력 구조]
-${structureGuide}
-`;
+ ⚠️ [작성 가이드]
+ 1. 톤앤매너: 성인 문학 스타일 (고급스러우면서도 관능적, 번역투 금지).
+ 2. 출력 형식: 아래 태그 구조를 엄수할 것.
+
+ [출력 구조]
+ ${structureGuide}
+ `;
 
   const userTextPrompt = `
-상품명: ${data.productNameKr}
-요약정보:
-${Array.isArray(data.summaryInfo) ? data.summaryInfo.join("\n") : JSON.stringify(data.summaryInfo)}
+ 상품명: ${data.productNameKr}
+ 
+ [핵심 스펙 및 요약 정보]
+ ${Array.isArray(data.summaryInfo) ? data.summaryInfo.join("\n") : JSON.stringify(data.summaryInfo)}
 
-위 정보를 바탕으로, 각 이미지를 분석하여 찰떡같은 문구를 써주세요.
-`;
+ 위 정보를 바탕으로, 각 이미지를 분석하여 4~5줄 분량의 찰떡같은 상세페이지 문구를 써주세요.
+ `;
 
   let messages: any[] = [{ role: "system", content: systemPrompt }];
   const contentParts: any[] = [{ type: "text", text: userTextPrompt }];
@@ -125,7 +136,11 @@ ${Array.isArray(data.summaryInfo) ? data.summaryInfo.join("\n") : JSON.stringify
       }),
     });
 
-    if (!res.ok) throw new Error("API 호출 실패");
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("OpenRouter API Error Details:", errorText);
+      throw new Error(`API 호출 실패: ${res.status} ${res.statusText} - ${errorText}`);
+    }
     const json = await res.json();
     const text: string = json.choices?.[0]?.message?.content || "";
     

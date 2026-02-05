@@ -227,7 +227,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
 
         {/* [추가] 동영상 삽입 이미지 (800x450) */}
         {data.videoInsertImage && (
-          <section className="pb-10 px-0 flex flex-col items-center bg-white">
+          <section id="video-insert-section" className="pb-10 px-0 flex flex-col items-center bg-white">
             <img 
               src={data.videoInsertImage} 
               className="w-full h-auto aspect-[16/9] object-cover block" 
@@ -240,7 +240,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         <section className="pb-32 px-10 flex flex-col items-center bg-white">
              {(data.isPackageImageEnabled ?? true) && (
               <>
-                <div className="bg-white shadow-xl rounded-xl overflow-hidden mb-8 border border-gray-100 transform rotate-1 hover:rotate-0 transition-transform duration-500 flex items-center justify-center">
+                <div className="bg-white shadow-xl rounded-xl overflow-hidden mb-8 border border-gray-100 flex items-center justify-center">
                     {packageImage ? (
                     <img 
                         src={packageImage} 

@@ -36,24 +36,93 @@ const App: React.FC = () => {
     }
   };
 
+  const cropImage = (image: HTMLImageElement, y: number, height: number, width: number): string => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    
+    // 원본 이미지에서 해당 영역만 잘라서 그리기
+    // drawImage(image, sy, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+    ctx.drawImage(image, 0, y, width, height, 0, 0, width, height);
+    return canvas.toDataURL('image/jpeg', 0.9); // 기본 품질 0.9
+  };
+
   const exportDetailPage = async () => {
     if (!detailRef.current) return;
     setIsLoading(true);
-    setLoadingMessage('전체 이미지를 저장 중입니다...');
+    setLoadingMessage('이미지 구조를 분석하고 저장 중입니다...');
+    
     try {
       const element = detailRef.current;
       await new Promise(resolve => setTimeout(resolve, 800)); // 이미지 로딩 대기
 
-      // html-to-image 사용
-      const dataUrl = await toJpeg(element, { quality: 0.9, backgroundColor: '#ffffff' });
+      // 1. 전체 이미지를 고화질로 캡처
+      const dataUrl = await toJpeg(element, { quality: 1.0, backgroundColor: '#ffffff' });
       
-      const link = document.createElement('a');
-      link.download = `detail_page_${data.productNameKr || 'product'}.jpg`;
-      link.href = dataUrl;
-      link.click();
+      const videoSection = element.querySelector('#video-insert-section') as HTMLElement;
+
+      // 2. 동영상 섹션이 없으면 기존 방식대로 저장
+      if (!data.videoInsertImage || !videoSection) {
+        const link = document.createElement('a');
+        link.download = `detail_page_${data.productNameKr || 'product'}.jpg`;
+        link.href = dataUrl;
+        link.click();
+      } else {
+        // 3. 동영상 섹션이 있으면 3분할 저장 (ZIP)
+        setLoadingMessage('이미지를 3분할(상단/중단/하단)하여 저장 중입니다...');
+        
+        // 위치 계산 (컨테이너 기준 상대 위치)
+        const containerRect = element.getBoundingClientRect();
+        
+        // 섹션 내부의 실제 이미지 요소(img)를 찾아서 기준점으로 삼음
+        const videoImgElement = videoSection.querySelector('img');
+        
+        if (!videoImgElement) {
+            throw new Error("동영상 이미지를 찾을 수 없습니다.");
+        }
+
+        const videoImgRect = videoImgElement.getBoundingClientRect();
+        
+        const videoTop = videoImgRect.top - containerRect.top;
+        const videoHeight = videoImgRect.height;
+        const totalHeight = containerRect.height;
+        const width = containerRect.width;
+
+        // 이미지 객체 생성 (전체 스크린샷 캔버스용)
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise(resolve => img.onload = resolve);
+
+        // 분할 작업
+        const zip = new JSZip();
+
+        // Part 1: 상단 (main1.jpg) - 0 ~ 이미지 시작점
+        const part1Url = cropImage(img, 0, videoTop, width);
+        zip.file('main1.jpg', part1Url.split(',')[1], { base64: true });
+
+        // Part 2: 동영상 부분 (main2.gif) - 원본 파일 사용
+        // data.videoInsertImage는 "data:image/gif;base64,..." 형태의 문자열임
+        const originalGifData = data.videoInsertImage.split(',')[1];
+        zip.file('main2.gif', originalGifData, { base64: true });
+
+        // Part 3: 하단 (main3.jpg) - 이미지 끝점 ~ 페이지 끝
+        // 이렇게 하면 섹션의 패딩(pb-10) 부분이 main3의 최상단에 포함됨
+        const part3Start = videoTop + videoHeight;
+        const part3Height = totalHeight - part3Start;
+        
+        if (part3Height > 0) {
+            const part3Url = cropImage(img, part3Start, part3Height, width);
+            zip.file('main3.jpg', part3Url.split(',')[1], { base64: true });
+        }
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        saveAs(content, `detail_split_${data.productNameKr || 'product'}.zip`);
+      }
+
     } catch (err) {
       console.error('Export failed', err);
-      // 에러 메시지 상세 출력
       alert(`이미지 저장 실패: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
