@@ -14,6 +14,11 @@ export interface OptionItem {
   id: string;
   name: string;
   image: string | null;
+  // Layout props (draggable)
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface ProductData {

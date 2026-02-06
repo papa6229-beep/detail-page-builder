@@ -1,6 +1,7 @@
 // components/Preview.tsx
 
 import React, { forwardRef } from 'react';
+import { Rnd } from 'react-rnd';
 import { ProductData } from '../types';
 
 // ✅ 그라데이션 여부 체크 헬퍼
@@ -55,9 +56,10 @@ const formatSummaryLines = (text: string): string[] => {
 
 interface PreviewProps {
   data: ProductData;
+  onOptionLayoutChange: (id: string, layout: { x: number, y: number, width: number, height: number }) => void;
 }
 
-const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
+const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayoutChange }, ref) => {
   const {
     productNameKr,
     productNameEn,
@@ -237,7 +239,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
         )}
 
         {/* 4-2. 패키지 디자인 (위치 이동됨) */}
-        <section className="pb-32 px-10 flex flex-col items-center bg-white">
+        <section id="preview-package" className="pb-32 px-10 flex flex-col items-center bg-white">
              {(data.isPackageImageEnabled ?? true) && (
               <>
                 <div className="bg-white shadow-xl rounded-xl overflow-hidden mb-8 border border-gray-100 flex items-center justify-center">
@@ -271,27 +273,61 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data }, ref) => {
           )}
         </section>
 
-        {/* 3. 옵션 (위치 이동됨: AI Summary -> Package Image -> Options) */}
+        {/* 3. 옵션 (Draggable) */}
         {options.length > 0 && (
-          <section id="preview-option" className="px-10 pb-20 pt-10 bg-white border-b border-gray-100">
+          <section id="preview-option" className="px-10 pb-20 pt-10 bg-white border-b border-gray-100 relative"
+             style={{ 
+                // 가장 아래에 있는 요소의 y + height + 여유공간(100px)을 섹션 높이로 설정
+                minHeight: options.length > 0 
+                    ? Math.max(...options.map(o => (o.y || 0) + (o.height || 400))) + 150 
+                    : 400 
+             }}
+          >
              <div className="flex items-center justify-center mb-12 gap-4 opacity-50">
                 <div className="h-px w-12 bg-gray-300"></div>
-                <h3 className="text-xl font-bold tracking-widest text-gray-800 uppercase">Option Check</h3>
+                <h3 className="text-xl font-bold tracking-widest text-gray-800 uppercase">Option Check (Resizable)</h3>
                 <div className="h-px w-12 bg-gray-300"></div>
              </div>
              
-             <div className="grid grid-cols-2 gap-x-8 gap-y-12">
+             {/* Rnd 캔버스 영역 */}
+             <div className="w-full h-full relative">
                {options.map((opt) => (
-                 <div key={opt.id} className="flex flex-col items-center group">
-                    <div className="w-full aspect-square bg-white rounded-3xl overflow-hidden mb-5 border-2 border-gray-100 flex items-center justify-center relative shadow-sm group-hover:border-rose-200 transition-colors">
-                       {opt.image ? (
-                         <img src={opt.image} className="w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105" alt={opt.name} />
-                       ) : (
-                         <span className="text-gray-300 font-bold text-sm">NO IMAGE</span>
-                       )}
+                 <Rnd
+                   key={opt.id}
+                   size={{ width: opt.width || 320, height: opt.height || 400 }}
+                   position={{ x: opt.x || 0, y: opt.y || 0 }}
+                   onDragStop={(e, d) => {
+                       onOptionLayoutChange(opt.id, { 
+                           x: d.x, 
+                           y: d.y, 
+                           width: opt.width || 320, 
+                           height: opt.height || 400 
+                       });
+                   }}
+                   onResizeStop={(e, direction, ref, delta, position) => {
+                       onOptionLayoutChange(opt.id, {
+                           width: parseInt(ref.style.width),
+                           height: parseInt(ref.style.height),
+                           ...position
+                       });
+                   }}
+                   className="group z-10" // z-index 확보
+                 >
+                    {/* 드래그 핸들 및 콘텐츠 */}
+                    <div className="w-full h-full flex flex-col p-2 border-2 border-transparent group-hover:border-blue-300 group-hover:bg-blue-50/10 rounded-xl transition-all select-none">
+                        <div className="w-full flex-1 bg-white rounded-3xl overflow-hidden mb-3 border-2 border-gray-100 flex items-center justify-center relative shadow-sm pointer-events-none">
+                           {opt.image ? (
+                             <img src={opt.image} className="w-full h-full object-contain p-4" alt={opt.name} />
+                           ) : (
+                             <span className="text-gray-300 font-bold text-sm">NO IMAGE</span>
+                           )}
+                        </div>
+                        <span className="font-bold text-lg text-gray-800 text-center block w-full pointer-events-none overflow-hidden text-ellipsis whitespace-nowrap">{opt.name}</span>
+                        
+                        {/* 크기 조절 핸들 시각적 힌트 (우측 하단) */}
+                        <div className="absolute bottom-1 right-1 w-4 h-4 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 cursor-nwse-resize"></div>
                     </div>
-                    <span className="font-bold text-lg text-gray-800">{opt.name}</span>
-                 </div>
+                 </Rnd>
                ))}
              </div>
           </section>

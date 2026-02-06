@@ -193,6 +193,14 @@ const App: React.FC = () => {
     }
   };
 
+  // ✅ 옵션 레이아웃 변경 핸들러
+  const handleOptionLayoutChange = (id: string, layout: { x: number, y: number, width: number, height: number }) => {
+    setData(prev => ({
+      ...prev,
+      options: prev.options.map(opt => opt.id === id ? { ...opt, ...layout } : opt)
+    }));
+  };
+
   return (
     // ✅ 화면 전체 높이 고정 (overflow-hidden) -> 내부에서 스크롤 처리
     <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
@@ -227,7 +235,7 @@ const App: React.FC = () => {
            <div className="flex flex-col items-center gap-10 min-w-[800px] pb-20">
               {/* 상세페이지 프리뷰 */}
               <div className="shadow-2xl bg-white">
-                 <Preview data={data} ref={detailRef} />
+                 <Preview data={data} ref={detailRef} onOptionLayoutChange={handleOptionLayoutChange} />
               </div>
 
               {/* 썸네일 프리뷰 */}

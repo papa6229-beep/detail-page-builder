@@ -137,7 +137,16 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
   // 옵션 관련
   const addOption = () => {
-    const newOption: OptionItem = { id: Date.now().toString(), name: '', image: null };
+    // 기본값: x=0, y=0, w=320, h=400 (적당한 크기)
+    const newOption: OptionItem = { 
+        id: Date.now().toString(), 
+        name: '', 
+        image: null,
+        x: 0, 
+        y: 0, 
+        width: 320, 
+        height: 400 
+    };
     onChange(prev => ({ ...prev, options: [...prev.options, newOption] }));
   };
   const removeOption = (id: string) => {
@@ -268,7 +277,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
       </section>
 
       {/* 4. 패키지 이미지 정보 (분리됨) */}
-      <section className="space-y-4" onClick={() => scrollTo('preview-main')}>
+      <section className="space-y-4" onClick={() => scrollTo('preview-package')}>
         <div className="flex justify-between items-center border-b pb-2">
             <h2 className="text-lg font-black text-gray-900">📦 패키지 이미지 설정</h2>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -285,7 +294,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
         {data.isPackageImageEnabled && (
             <div className="grid grid-cols-2 gap-4 animate-fade-in-down">
-                <div className="col-span-1"><ImageUploader label="Package Image" value={data.packageImage} isSmall={true} targetId="preview-main" onChange={handleImageChange('packageImage')} /></div>
+                <div className="col-span-1"><ImageUploader label="Package Image" value={data.packageImage} isSmall={true} targetId="preview-package" onChange={handleImageChange('packageImage')} /></div>
                  <div className="col-span-1 flex items-center justify-center text-xs text-gray-400">패키지 이미지는<br/>작게 출력됩니다.</div>
             </div>
         )}
