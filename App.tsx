@@ -217,6 +217,39 @@ const App: React.FC = () => {
     }));
   };
 
+  // ✅ 임시 저장 함수
+  const saveTemporary = () => {
+    try {
+      localStorage.setItem('builder_temp_save', JSON.stringify(data));
+      alert('임시 저장이 완료되었습니다!\n(브라우저 캐시를 지우면 삭제될 수 있습니다)');
+    } catch (error) {
+      console.error(error);
+      alert('임시 저장 중 오류가 발생했습니다.');
+    }
+  };
+
+  // ✅ 불러오기 함수
+  const loadTemporary = () => {
+    const savedData = localStorage.getItem('builder_temp_save');
+    if (!savedData) {
+      alert('저장된 데이터가 없습니다.');
+      return;
+    }
+
+    if (window.confirm('저장된 데이터를 불러오시겠습니까?\n현재 작업 중인 내용은 사라집니다.')) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        // 기존 데이터 구조와 호환성 체크 (간단하게)
+        if (parsedData && typeof parsedData === 'object') {
+          setData(prev => ({ ...prev, ...parsedData }));
+        }
+      } catch (error) {
+        console.error(error);
+        alert('데이터를 불러오는 중 오류가 발생했습니다.');
+      }
+    }
+  };
+
   return (
     // ✅ 화면 전체 높이 고정 (overflow-hidden) -> 내부에서 스크롤 처리
     <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
@@ -228,6 +261,9 @@ const App: React.FC = () => {
           <h1 className="font-bold text-gray-800 text-lg">상세페이지 빌더 v3.0</h1>
         </div>
         <div className="flex gap-2">
+           <button onClick={saveTemporary} className="px-3 py-2 border border-blue-200 text-blue-600 bg-blue-50 rounded text-sm font-bold hover:bg-blue-100 transition-colors">임시 저장</button>
+           <button onClick={loadTemporary} className="px-3 py-2 border border-gray-300 text-gray-600 bg-white rounded text-sm font-bold hover:bg-gray-50 transition-colors">불러오기</button>
+           <div className="w-px h-8 bg-gray-200 mx-1"></div>
            <button onClick={exportThumbnails} className="px-4 py-2 border border-gray-300 rounded text-sm font-bold hover:bg-gray-50">썸네일 저장</button>
            <button onClick={exportDetailPage} className="px-4 py-2 bg-black text-white rounded text-sm font-bold hover:bg-gray-800">전체 이미지 저장</button>
         </div>
