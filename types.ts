@@ -50,6 +50,10 @@ export interface ProductData {
 
   // Toggle Flags
   isPackageImageEnabled?: boolean;
+  
+  // Layout Data
+  packageLayout?: { x: number, y: number, width: number, height: number };
+  thumbnailPackageLayout?: { x: number, y: number, width: number, height: number };
 
   // AI Generated Text
   aiSummary: string;

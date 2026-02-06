@@ -201,6 +201,22 @@ const App: React.FC = () => {
     }));
   };
 
+  // ✅ 패키지 이미지 레이아웃 변경 핸들러
+  const handlePackageLayoutChange = (layout: { x: number, y: number, width: number, height: number }) => {
+    setData(prev => ({
+        ...prev,
+        packageLayout: layout
+    }));
+  };
+
+  // ✅ 썸네일 패키지 이미지 레이아웃 변경 핸들러 (500px 기준)
+  const handleThumbnailPackageLayoutChange = (layout: { x: number, y: number, width: number, height: number }) => {
+    setData(prev => ({
+        ...prev,
+        thumbnailPackageLayout: layout
+    }));
+  };
+
   return (
     // ✅ 화면 전체 높이 고정 (overflow-hidden) -> 내부에서 스크롤 처리
     <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
@@ -235,7 +251,12 @@ const App: React.FC = () => {
            <div className="flex flex-col items-center gap-10 min-w-[800px] pb-20">
               {/* 상세페이지 프리뷰 */}
               <div className="shadow-2xl bg-white">
-                 <Preview data={data} ref={detailRef} onOptionLayoutChange={handleOptionLayoutChange} />
+                 <Preview 
+                    data={data} 
+                    ref={detailRef} 
+                    onOptionLayoutChange={handleOptionLayoutChange} 
+                    onPackageLayoutChange={handlePackageLayoutChange}
+                 />
               </div>
 
               {/* 썸네일 프리뷰 */}
@@ -253,6 +274,8 @@ const App: React.FC = () => {
                                   width={preset.width} 
                                   height={preset.height} 
                                   hidePackage={preset.hidePackage}
+                                  externalScale={200/preset.width}
+                                  onLayoutChange={handleThumbnailPackageLayoutChange}
                                   ref={el => thumbnailRefs.current[i] = el} 
                                 />
                              </div>

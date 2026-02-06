@@ -57,9 +57,10 @@ const formatSummaryLines = (text: string): string[] => {
 interface PreviewProps {
   data: ProductData;
   onOptionLayoutChange: (id: string, layout: { x: number, y: number, width: number, height: number }) => void;
+  onPackageLayoutChange: (layout: { x: number, y: number, width: number, height: number }) => void;
 }
 
-const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayoutChange }, ref) => {
+const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayoutChange, onPackageLayoutChange }, ref) => {
   const {
     productNameKr,
     productNameEn,
@@ -239,36 +240,85 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
         )}
 
         {/* 4-2. 패키지 디자인 (위치 이동됨) */}
-        <section id="preview-package" className="pb-32 px-10 flex flex-col items-center bg-white">
+        <section id="preview-package" className="pb-32 px-10 flex flex-col items-center bg-white relative"
+             style={{ 
+                // 패키지 이미지 위치에 따라 섹션 높이 자동 조절
+                minHeight: (data.packageLayout?.y || 0) + (data.packageLayout?.height || 550) + 150 
+             }}
+        >
              {(data.isPackageImageEnabled ?? true) && (
               <>
-                <div className="bg-white shadow-xl rounded-xl overflow-hidden mb-8 border border-gray-100 flex items-center justify-center">
-                    {packageImage ? (
-                    <img 
-                        src={packageImage} 
-                        className="block w-auto h-auto max-w-[400px] max-h-[550px]" 
-                        alt="Package" 
-                    />
-                    ) : (
-                    <div className="w-[400px] aspect-square flex items-center justify-center bg-gray-100">
-                        <span className="text-gray-300 font-bold">PACKAGE IMAGE</span>
-                    </div>
-                    )}
-                </div>
+                 {/* Rnd 적용 */}
+                 <div className="w-full h-full relative flex justify-center">
+                    <Rnd
+                       size={{ width: data.packageLayout?.width || 400, height: data.packageLayout?.height || 550 }}
+                       position={{ x: data.packageLayout?.x || 0, y: data.packageLayout?.y || 0 }}
+                       onDragStop={(e, d) => {
+                           onPackageLayoutChange({ 
+                               x: d.x, 
+                               y: d.y, 
+                               width: data.packageLayout?.width || 400, 
+                               height: data.packageLayout?.height || 550 
+                           });
+                       }}
+                       onResizeStop={(e, direction, ref, delta, position) => {
+                           onPackageLayoutChange({
+                               width: parseInt(ref.style.width),
+                               height: parseInt(ref.style.height),
+                               ...position
+                           });
+                       }}
+                       className="group z-10" // z-index 확보
+                    >
+                        <div className="w-full h-full flex flex-col p-2 border-2 border-transparent group-hover:border-blue-300 group-hover:bg-blue-50/10 rounded-xl transition-all select-none">
+                            <div className="w-full flex-1 bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center relative pointer-events-none mb-4">
+                                {packageImage ? (
+                                <img 
+                                    src={packageImage} 
+                                    className="block w-full h-full object-contain" 
+                                    alt="Package" 
+                                />
+                                ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                    <span className="text-gray-300 font-bold">PACKAGE IMAGE</span>
+                                </div>
+                                )}
+                            </div>
+
+                            {/* Package Design Text */}
+                            <div className="text-center pointer-events-none">
+                                <h4 className="text-xl font-black mb-1 truncate px-2" 
+                                     style={isGradient(themeColor) ? {
+                                        backgroundImage: themeColor,
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent',
+                                        backgroundClip: 'text',
+                                        color: 'transparent'
+                                    } : { color: themeColor }}>
+                                    {productNameKr}
+                                </h4>
+                                <p className="text-sm font-bold tracking-[0.3em] text-gray-300 uppercase whitespace-nowrap">Package Design</p>
+                            </div>
+                            
+                            {/* 크기 조절 핸들 시각적 힌트 */}
+                            <div className="absolute bottom-1 right-1 w-4 h-4 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 cursor-nwse-resize"></div>
+                        </div>
+                    </Rnd>
+                 </div>
                 
-                <div className="text-center">
-                    <h4 className="text-2xl font-black mb-1" 
-                         style={isGradient(themeColor) ? {
-                            backgroundImage: themeColor,
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            backgroundClip: 'text',
-                            color: 'transparent'
-                        } : { color: themeColor }}>
-                        {productNameKr}
-                    </h4>
-                    <p className="text-base font-bold tracking-[0.3em] text-gray-300 uppercase">Package Design</p>
-                </div>
+                {/* 텍스트는 섹션 하단에 고정 (또는 이 부분도 같이 드래그? 아니면 별도? 일단 요청은 '패키지 이미지 설정 부분' 이므로 이미지만 적용) */}
+                {/* 다만 Rnd가 absolute라서 흐름에서 빠짐. 텍스트가 겹칠 수 있음. */}
+                {/* 텍스트 위치를 절대 위치로 잡거나, Rnd 아래에 마진을 줘야 함. 
+                    하지만 Rnd는 absolute라 공간 차지 안 함. 
+                    그래서 섹션 minHeight를 Rnd 바닥 기준으로 잡았음.
+                    텍스트는 Rnd와 무관하게 flow에 있음 -> Rnd와 겹침 (0,0 시작시). 
+                    사용자가 Rnd를 옮겨서 텍스트와 겹치지 않게 배치하도록 유도하거나, 텍스트도 Rnd 안에 넣어야 함. 
+                    일단 텍스트는 'Package Design' 타이틀이므로 이미지와 세트임. 
+                    
+                    사용자 요청: "패키지 이미지 설정 부분... 드래그/리사이징"
+                    옵션 파트처럼 전체를 캔버스로 쓰길 원할 듯.
+                    그럼 텍스트도 Rnd 안에 포함시키겠습니다.
+                */}
               </>
           )}
         </section>
@@ -356,11 +406,13 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                 <div className="w-full aspect-video flex items-center justify-center text-gray-300 font-bold text-3xl">FEATURE IMAGE</div>
               )}
             </div>
+            {data.aiFeatureDesc && (
             <div className="max-w-3xl mx-auto text-center px-4">
               <p className="text-xl leading-9 text-gray-700 font-medium whitespace-pre-line break-keep">
                 {data.aiFeatureDesc}
               </p>
             </div>
+            )}
           </div>
         </section>
         )}

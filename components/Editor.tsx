@@ -336,8 +336,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                         <span className="text-xs font-bold text-gray-500">Main</span>
                         <button onClick={() => { removeSlot('featureImage'); removeSlot('aiFeatureDesc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제</button>
                     </div>
-                    <ImageUploader label="Feature Image" value={data.featureImage} targetId="preview-feature" onChange={handleImageChange('featureImage')} />
-                    <Textarea label="AI 설명" value={data.aiFeatureDesc} placeholder="AI 작성 영역" targetId="preview-feature" onChange={handleTextChange('aiFeatureDesc')} />
+                    <ImageUploader label="Feature Image" value={data.featureImage} targetId="preview-feature" onChange={handleImageChange('featureImage')} onDelete={() => removeSlot('featureImage')} />
+                    <Textarea label="AI 설명" value={data.aiFeatureDesc} placeholder="AI 작성 영역" targetId="preview-feature" onChange={handleTextChange('aiFeatureDesc')} onDelete={() => removeSlot('aiFeatureDesc')} />
                 </>
             ) : (
                 <button onClick={() => { enableSlot('featureImage'); enableSlot('aiFeatureDesc'); }} className="w-full py-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50 transition-all">+ Feature 섹션 추가하기</button>
@@ -353,8 +353,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                     <span className="text-xs font-bold text-gray-500">Main</span>
                     <button onClick={() => { removeSlot('point1Image1'); removeSlot('aiPoint1Desc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제 (전체)</button>
                 </div>
-                <ImageUploader label="Image 1-1" value={data.point1Image1} targetId="preview-point1" onChange={handleImageChange('point1Image1')} />
-                <Textarea label="설명 1-1" value={data.aiPoint1Desc} placeholder="AI 작성 영역" targetId="preview-point1" onChange={handleTextChange('aiPoint1Desc')} />
+                <ImageUploader label="Image 1-1" value={data.point1Image1} targetId="preview-point1" onChange={handleImageChange('point1Image1')} onDelete={() => removeSlot('point1Image1')} />
+                <Textarea label="설명 1-1" value={data.aiPoint1Desc} placeholder="AI 작성 영역" targetId="preview-point1" onChange={handleTextChange('aiPoint1Desc')} onDelete={() => removeSlot('aiPoint1Desc')} />
                 
                 {renderSubPoint(2, 'point1', 'preview-point1')}
                 {renderSubPoint(3, 'point1', 'preview-point1')}
@@ -373,8 +373,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                      <span className="text-xs font-bold text-gray-500">Main</span>
                      <button onClick={() => { removeSlot('point2Image1'); removeSlot('aiPoint2Desc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제</button>
                  </div>
-                 <ImageUploader label="Image 2-1" value={data.point2Image1} targetId="preview-point2" onChange={handleImageChange('point2Image1')} />
-                 <Textarea label="설명 2-1" value={data.aiPoint2Desc} placeholder="AI 작성 영역" targetId="preview-point2" onChange={handleTextChange('aiPoint2Desc')} />
+                 <ImageUploader label="Image 2-1" value={data.point2Image1} targetId="preview-point2" onChange={handleImageChange('point2Image1')} onDelete={() => removeSlot('point2Image1')} />
+                 <Textarea label="설명 2-1" value={data.aiPoint2Desc} placeholder="AI 작성 영역" targetId="preview-point2" onChange={handleTextChange('aiPoint2Desc')} onDelete={() => removeSlot('aiPoint2Desc')} />
                  
                  {renderSubPoint(2, 'point2', 'preview-point2')}
                  {renderSubPoint(3, 'point2', 'preview-point2')}
