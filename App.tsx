@@ -59,7 +59,8 @@ const App: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 800)); // 이미지 로딩 대기
 
       // 1. 전체 이미지를 고화질로 캡처
-      const dataUrl = await toJpeg(element, { quality: 1.0, backgroundColor: '#ffffff' });
+      // ✅ pixelRatio: 1 추가하여 고해상도 디스플레이에서 캔버스 크기 폭주 방지
+      const dataUrl = await toJpeg(element, { quality: 0.95, backgroundColor: '#ffffff', pixelRatio: 1 });
       
       const videoSection = element.querySelector('#video-insert-section') as HTMLElement;
 
@@ -92,8 +93,13 @@ const App: React.FC = () => {
 
         // 이미지 객체 생성 (전체 스크린샷 캔버스용)
         const img = new Image();
-        img.src = dataUrl;
-        await new Promise(resolve => img.onload = resolve);
+        
+        // ✅ 이미지 로딩 에러 핸들링 추가
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = () => reject(new Error("스크린샷 이미지 로드 실패"));
+            img.src = dataUrl;
+        });
 
         // 분할 작업
         const zip = new JSZip();
@@ -104,6 +110,9 @@ const App: React.FC = () => {
 
         // Part 2: 동영상 부분 (main2.gif) - 원본 파일 사용
         // data.videoInsertImage는 "data:image/gif;base64,..." 형태의 문자열임
+        if (!data.videoInsertImage.includes('base64,')) {
+             throw new Error("동영상 이미지 데이터 형식이 잘못되었습니다.");
+        }
         const originalGifData = data.videoInsertImage.split(',')[1];
         zip.file('main2.gif', originalGifData, { base64: true });
 
@@ -141,7 +150,7 @@ const App: React.FC = () => {
           const preset = THUMBNAIL_PRESETS[i];
           
           // html-to-image 사용
-          const dataUrl = await toJpeg(ref, { quality: 1.0, backgroundColor: '#ffffff' });
+          const dataUrl = await toJpeg(ref, { quality: 0.95, backgroundColor: '#ffffff', pixelRatio: 1 });
           
           // dataURL에서 base64 데이터만 추출
           const imageData = dataUrl.split(',')[1];
@@ -169,7 +178,7 @@ const App: React.FC = () => {
     setLoadingMessage(`썸네일(${label}) 저장 중...`);
     
     try {
-      const dataUrl = await toJpeg(ref, { quality: 1.0, backgroundColor: '#ffffff' });
+      const dataUrl = await toJpeg(ref, { quality: 0.95, backgroundColor: '#ffffff', pixelRatio: 1 });
       
       const link = document.createElement('a');
       link.download = `thumbnail_${label}_${data.productNameKr || 'product'}.jpg`;

@@ -222,10 +222,6 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
              </div>
         </div>
         <div>
-           <label className="block text-sm font-bold text-gray-700 mb-1">제조사/브랜드명</label>
-           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium text-gray-600" value={data.brandName} onChange={handleTextChange('brandName')} onFocus={() => scrollTo('preview-top')} placeholder="예: BANANA MALL" />
-        </div>
-        <div>
           <label className="block text-sm font-bold text-gray-700 mb-1">상품명 (한글)</label>
           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-bold" value={data.productNameKr} onChange={handleTextChange('productNameKr')} onFocus={() => scrollTo('preview-top')} placeholder="예: 바나나 오나홀" />
         </div>
@@ -233,9 +229,19 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
            <label className="block text-sm font-bold text-gray-700 mb-1">영문 상품명</label>
            <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium font-montserrat" value={data.productNameEn} onChange={handleTextChange('productNameEn')} onFocus={() => scrollTo('preview-top')} placeholder="BANANA ONAHOLE" />
         </div>
+        <div>
+           <label className="block text-sm font-bold text-gray-700 mb-1">제조사/브랜드명</label>
+           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium text-gray-600" value={data.brandName} onChange={handleTextChange('brandName')} onFocus={() => scrollTo('preview-top')} placeholder="예: BANANA MALL" />
+        </div>
       </section>
 
-      {/* 2. 스펙 정보 */}
+      {/* 2. 메인 이미지 */}
+      <section className="space-y-4" onClick={() => scrollTo('preview-main')}>
+        <h2 className="text-lg font-black text-gray-900 border-b pb-2">🖼️ 메인 이미지</h2>
+        <ImageUploader label="Main Image" value={data.mainImage} targetId="preview-main" onChange={handleImageChange('mainImage')} />
+      </section>
+
+      {/* 3. 스펙 정보 */}
       <section className="space-y-4" onClick={() => scrollTo('preview-spec')}>
          <h2 className="text-lg font-black text-gray-900 border-b pb-2">📝 스펙 정보</h2>
          <div className="grid grid-cols-2 gap-3">
@@ -261,13 +267,10 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
          </div>
       </section>
 
-      {/* 3. 메인 이미지 */}
+      {/* 4. 패키지 이미지 정보 (분리됨) */}
       <section className="space-y-4" onClick={() => scrollTo('preview-main')}>
-        <h2 className="text-lg font-black text-gray-900 border-b pb-2">🖼️ 메인 이미지</h2>
-        <ImageUploader label="Main Image" value={data.mainImage} targetId="preview-main" onChange={handleImageChange('mainImage')} />
-        
-        <div className="flex justify-between items-center mt-6 mb-2">
-            <h3 className="text-sm font-bold text-gray-800">📦 패키지 이미지 설정</h3>
+        <div className="flex justify-between items-center border-b pb-2">
+            <h2 className="text-lg font-black text-gray-900">📦 패키지 이미지 설정</h2>
             <label className="relative inline-flex items-center cursor-pointer">
                 <input 
                     type="checkbox" 
@@ -288,7 +291,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
         )}
       </section>
 
-      {/* 4. 옵션 */}
+      {/* 5. 옵션 */}
       <section className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-option')}>
          <div className="flex justify-between items-center mb-4">
              <h2 className="text-md font-bold text-gray-900">✨ 추가 옵션 (Option)</h2>
