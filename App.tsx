@@ -63,71 +63,87 @@ const App: React.FC = () => {
       const dataUrl = await toJpeg(element, { quality: 0.95, backgroundColor: '#ffffff', pixelRatio: 1 });
       
       const videoSection = element.querySelector('#video-insert-section') as HTMLElement;
+      const hasVideoData = data.videoInsertImage && typeof data.videoInsertImage === 'string' && data.videoInsertImage.length > 0;
 
-      // 2. 동영상 섹션이 없으면 기존 방식대로 저장
-      if (!data.videoInsertImage || !videoSection) {
+      // 2. 동영상 섹션이 없거나(데이터 없음 or DOM 없음) 체크
+      // 데이터가 있어도 DOM이 없으면(예: 렌더링 타이밍 이슈) 일반 저장으로 처리하여 에러 방지
+      if (!hasVideoData || !videoSection) {
         const link = document.createElement('a');
         link.download = `detail_page_${data.productNameKr || 'product'}.jpg`;
         link.href = dataUrl;
+        document.body.appendChild(link); // Firefox 등 호환성 위해 body에 추가
         link.click();
+        document.body.removeChild(link);
       } else {
-        // 3. 동영상 섹션이 있으면 3분할 저장 (ZIP)
-        setLoadingMessage('이미지를 3분할(상단/중단/하단)하여 저장 중입니다...');
-        
-        // 위치 계산 (컨테이너 기준 상대 위치)
-        const containerRect = element.getBoundingClientRect();
-        
-        // 섹션 내부의 실제 이미지 요소(img)를 찾아서 기준점으로 삼음
-        const videoImgElement = videoSection.querySelector('img');
-        
-        if (!videoImgElement) {
-            throw new Error("동영상 이미지를 찾을 수 없습니다.");
+        try {
+          // 3. 동영상 섹션이 있으면 3분할 저장 (ZIP)
+          setLoadingMessage('이미지를 3분할(상단/중단/하단)하여 저장 중입니다...');
+          
+          // 위치 계산 (컨테이너 기준 상대 위치)
+          const containerRect = element.getBoundingClientRect();
+          
+          // 섹션 내부의 실제 이미지 요소(img)를 찾아서 기준점으로 삼음
+          const videoImgElement = videoSection.querySelector('img');
+          
+          if (!videoImgElement) {
+              throw new Error("동영상 이미지를 찾을 수 없습니다.");
+          }
+
+          const videoImgRect = videoImgElement.getBoundingClientRect();
+          
+          const videoTop = videoImgRect.top - containerRect.top;
+          const videoHeight = videoImgRect.height;
+          const totalHeight = containerRect.height;
+          const width = containerRect.width;
+
+          // 이미지 객체 생성 (전체 스크린샷 캔버스용)
+          const img = new Image();
+          
+          await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = () => reject(new Error("스크린샷 이미지 로드 실패"));
+              img.src = dataUrl;
+          });
+
+          // 분할 작업
+          const zip = new JSZip();
+
+          // Part 1: 상단 (main1.jpg)
+          const safeVideoTop = Math.max(0, videoTop);
+          if (safeVideoTop > 0) {
+              const part1Url = cropImage(img, 0, safeVideoTop, width);
+              zip.file('main1.jpg', part1Url.split(',')[1], { base64: true });
+          }
+
+          // Part 2: 동영상 부분 (main2.gif)
+          if (!data.videoInsertImage!.includes('base64,')) {
+               throw new Error("동영상 이미지 데이터 형식이 잘못되었습니다.");
+          }
+          const originalGifData = data.videoInsertImage!.split(',')[1];
+          zip.file('main2.gif', originalGifData, { base64: true });
+
+          // Part 3: 하단 (main3.jpg)
+          const part3Start = safeVideoTop + videoHeight;
+          const part3Height = totalHeight - part3Start;
+          
+          if (part3Height > 0) {
+              const part3Url = cropImage(img, part3Start, part3Height, width);
+              zip.file('main3.jpg', part3Url.split(',')[1], { base64: true });
+          }
+
+          const content = await zip.generateAsync({ type: 'blob' });
+          saveAs(content, `detail_split_${data.productNameKr || 'product'}.zip`);
+
+        } catch (splitError) {
+          console.warn("분할 저장 중 오류 발생, 전체 이미지 저장으로 전환합니다:", splitError);
+          // 분할 저장 실패 시 백업: 전체 이미지 저장
+          const link = document.createElement('a');
+          link.download = `detail_page_${data.productNameKr || 'product'}.jpg`;
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         }
-
-        const videoImgRect = videoImgElement.getBoundingClientRect();
-        
-        const videoTop = videoImgRect.top - containerRect.top;
-        const videoHeight = videoImgRect.height;
-        const totalHeight = containerRect.height;
-        const width = containerRect.width;
-
-        // 이미지 객체 생성 (전체 스크린샷 캔버스용)
-        const img = new Image();
-        
-        // ✅ 이미지 로딩 에러 핸들링 추가
-        await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = () => reject(new Error("스크린샷 이미지 로드 실패"));
-            img.src = dataUrl;
-        });
-
-        // 분할 작업
-        const zip = new JSZip();
-
-        // Part 1: 상단 (main1.jpg) - 0 ~ 이미지 시작점
-        const part1Url = cropImage(img, 0, videoTop, width);
-        zip.file('main1.jpg', part1Url.split(',')[1], { base64: true });
-
-        // Part 2: 동영상 부분 (main2.gif) - 원본 파일 사용
-        // data.videoInsertImage는 "data:image/gif;base64,..." 형태의 문자열임
-        if (!data.videoInsertImage.includes('base64,')) {
-             throw new Error("동영상 이미지 데이터 형식이 잘못되었습니다.");
-        }
-        const originalGifData = data.videoInsertImage.split(',')[1];
-        zip.file('main2.gif', originalGifData, { base64: true });
-
-        // Part 3: 하단 (main3.jpg) - 이미지 끝점 ~ 페이지 끝
-        // 이렇게 하면 섹션의 패딩(pb-10) 부분이 main3의 최상단에 포함됨
-        const part3Start = videoTop + videoHeight;
-        const part3Height = totalHeight - part3Start;
-        
-        if (part3Height > 0) {
-            const part3Url = cropImage(img, part3Start, part3Height, width);
-            zip.file('main3.jpg', part3Url.split(',')[1], { base64: true });
-        }
-
-        const content = await zip.generateAsync({ type: 'blob' });
-        saveAs(content, `detail_split_${data.productNameKr || 'product'}.zip`);
       }
 
     } catch (err) {
