@@ -42,7 +42,7 @@ export const INITIAL_PRODUCT_DATA: ProductData = {
   videoInsertImage: null, // [추가]
   thumbnailImage: null,
 
-  isPackageImageEnabled: true,
+  isPackageImageEnabled: false,
   
   aiSummary: '',
   aiFeatureDesc: '',
