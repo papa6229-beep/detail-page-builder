@@ -45,6 +45,12 @@ export const INITIAL_PRODUCT_DATA: ProductData = {
   watermarkSettings: {},
 
   isPackageImageEnabled: false,
+
+  // [Remote] 섹션 활성화 여부 (기본값 true)
+  isFeatureEnabled: true,
+  isPoint1Enabled: true,
+  isPoint2Enabled: true,
+  isSizeEnabled: true,
   
   aiSummary: '',
   aiFeatureDesc: '',

@@ -55,6 +55,10 @@ export interface ProductData {
 
   // Toggle Flags
   isPackageImageEnabled?: boolean;
+  isFeatureEnabled?: boolean; // [추가]
+  isPoint1Enabled?: boolean;  // [추가]
+  isPoint2Enabled?: boolean;  // [추가]
+  isSizeEnabled?: boolean;    // [추가]
   
   // Layout Data
   packageLayout?: { x: number, y: number, width: number, height: number };

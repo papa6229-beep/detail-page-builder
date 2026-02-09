@@ -23,25 +23,45 @@ const ImageUploader = React.memo(({
 
   return (
     <div className="mb-4" onClick={scrollToPreview}>
+      {/* 1. 상단 라벨 및 삭제 버튼 영역 */}
       <div className="flex justify-between items-end mb-1">
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide cursor-default">
               {label} <span className="text-gray-300 font-normal">{subLabel}</span>
           </label>
           {onDelete && value && (
-              <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-[10px] text-red-400 font-bold hover:text-red-600 underline">삭제</button>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDelete(); }} 
+                className="text-[10px] text-red-400 font-bold hover:text-red-600 underline focus:outline-none focus:text-red-600"
+                aria-label={`${label} 삭제`}
+              >
+                삭제
+              </button>
           )}
       </div>
-      <div className={`relative w-full ${isSmall ? 'h-32' : 'aspect-video'} bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg overflow-hidden hover:border-gray-400 transition-colors group cursor-pointer`}>
+
+      {/* 2. 업로드 영역 (Label로 감싸서 클릭 시 파일 선택창 자동 활성화) */}
+      <label 
+        className={`relative block w-full ${isSmall ? 'h-32' : 'aspect-video'} bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg overflow-hidden hover:border-gray-400 transition-colors group cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent`}
+      >
         {hasImage ? (
           <img src={value} alt={label} className="w-full h-full object-contain bg-white" />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-300">
-            <span className="text-2xl mb-1">+</span>
+            <span className="text-2xl mb-1" aria-hidden="true">+</span>
             <span className="text-[10px] font-bold">UPLOAD</span>
           </div>
         )}
-        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onChange} onClick={(e) => (e.currentTarget.value = '')} />
-      </div>
+        
+        {/* 접근성을 위한 숨김 처리 (sr-only: 시각적으로만 숨김) */}
+        <input 
+            type="file" 
+            accept="image/*" 
+            className="sr-only" 
+            onChange={onChange} 
+            onClick={(e) => (e.currentTarget.value = '')} 
+        />
+      </label>
       
       {/* 이미지 편집 및 워터마크 버튼 */}
       <div className="mt-2 flex justify-end gap-2">
@@ -56,17 +76,18 @@ const ImageUploader = React.memo(({
                 {isWatermarkOn ? '워터마크 ON' : '워터마크 OFF'}
             </button>
         )}
+
         <a 
             href="https://new.express.adobe.com/" 
             target="_blank" 
             rel="noreferrer"
-            className="text-xs text-gray-500 hover:text-blue-600 bg-gray-100 px-2 py-1 rounded inline-flex items-center gap-1 transition-colors"
+            className="text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-xs font-bold px-4 py-2 rounded-full inline-flex items-center gap-1.5 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 focus:ring-2 focus:ring-violet-300 focus:outline-none"
             onClick={(e) => e.stopPropagation()} 
         >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
-            이미지 편집
+            Adobe로 이미지 편집
         </a>
       </div>
     </div>
