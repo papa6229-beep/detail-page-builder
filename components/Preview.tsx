@@ -58,9 +58,10 @@ interface PreviewProps {
   data: ProductData;
   onOptionLayoutChange: (id: string, layout: { x: number, y: number, width: number, height: number }) => void;
   onPackageLayoutChange: (layout: { x: number, y: number, width: number, height: number }) => void;
+  onWatermarkLayoutChange: (id: string, layout: { x: number, y: number, width: number, height: number }) => void;
 }
 
-const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayoutChange, onPackageLayoutChange }, ref) => {
+const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayoutChange, onPackageLayoutChange, onWatermarkLayoutChange }, ref) => {
   const {
     productNameKr,
     productNameEn,
@@ -84,7 +85,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
     imgUrl: string | undefined,
     desc: string | undefined,
     bgNumber: string,
-    keyPrefix: string
+    keyPrefix: string,
+    dataKey?: string // [추가] 워터마크용 데이터 키
   ) => {
     if (!imgUrl && !desc) return null;
 
@@ -92,8 +94,9 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
       <React.Fragment key={keyPrefix}>
         {/* 이미지 */}
         {imgUrl && (
-          <div className="w-full bg-gray-50 mb-12 overflow-hidden shadow-sm rounded-lg">
+          <div className="w-full bg-gray-50 mb-12 overflow-hidden shadow-sm rounded-lg relative">
             <img src={imgUrl} className="w-full h-auto block" alt={`${keyPrefix} Image`} />
+            {dataKey && <RenderWatermark targetKey={dataKey} />}
           </div>
         )}
 
@@ -132,6 +135,67 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
     (data as any).point2Image3 || 
     (data as any).aiPoint2Desc3;
 
+  // ✅ 워터마크 렌더러
+  const RenderWatermark = ({ targetKey, containerWidth, containerHeight, isFixed = false }: { targetKey: string, containerWidth?: number, containerHeight?: number, isFixed?: boolean }) => {
+    const settings = data.watermarkSettings?.[targetKey];
+    if (!data.watermarkImage || !settings?.show) return null;
+
+    if (isFixed) {
+        return (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+                 <img 
+                    src={data.watermarkImage} 
+                    className="object-contain" // 크기는 일단 원본 비율 유지하거나 적절히 제한
+                    style={{ width: settings?.width ? `${settings.width}px` : '150px', height: settings?.height ? `${settings.height}px` : 'auto', opacity: 0.9 }}
+                    alt="watermark" 
+                 />
+            </div>
+        );
+    }
+
+    // 초기 위치/크기 설정 (중앙 정렬)
+    const defaultWidth = 100;
+    const defaultHeight = 100; // 비율에 따라 자동 조절됨
+    const x = settings.x || (containerWidth ? (containerWidth - defaultWidth) / 2 : 0);
+    const y = settings.y || (containerHeight ? (containerHeight - defaultHeight) / 2 : 0);
+
+    return (
+        <Rnd
+            size={{ width: settings.width || defaultWidth, height: settings.height || defaultHeight }}
+            position={{ x: x, y: y }}
+            onDragStop={(e, d) => {
+                onWatermarkLayoutChange(targetKey, { 
+                    x: d.x, 
+                    y: d.y, 
+                    width: settings.width || defaultWidth, 
+                    height: settings.height || defaultHeight 
+                });
+            }}
+            onResizeStop={(e, direction, ref, delta, position) => {
+                onWatermarkLayoutChange(targetKey, {
+                    width: parseInt(ref.style.width),
+                    height: parseInt(ref.style.height),
+                    ...position
+                });
+            }}
+            bounds="parent"
+            className="z-50 group" // 최상위 레이어
+        >
+            <div className="w-full h-full relative cursor-move">
+                 <img 
+                    src={data.watermarkImage} 
+                    className="w-full h-full object-contain pointer-events-none select-none" 
+                    alt="watermark" 
+                 />
+                 {/* 호버 시 테두리 표시 */}
+                 <div className="absolute inset-0 border-2 border-transparent group-hover:border-purple-400 rounded transition-colors"></div>
+                 {/* 리사이즈 핸들 */}
+                 <div className="absolute bottom-[-4px] right-[-4px] w-3 h-3 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 cursor-nwse-resize"></div>
+            </div>
+        </Rnd>
+    );
+  };
+
   return (
     <div className="flex flex-col items-center bg-gray-100 p-0 overflow-y-auto h-full">
       <div 
@@ -156,7 +220,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             {productNameEn || "PRODUCT ENGLISH NAME"}
           </p>
           
-          <div id="preview-main" className="w-full bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 rounded-lg shadow-inner">
+          <div id="preview-main" className="w-full bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 rounded-lg shadow-inner relative">
             {mainImage ? (
               <img src={mainImage} className="w-full h-auto block" alt="Main" />
             ) : (
@@ -164,6 +228,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                 <span className="text-gray-300 font-bold text-4xl">MAIN IMAGE</span>
               </div>
             )}
+            <RenderWatermark targetKey="mainImage" />
           </div>
         </header>
 
@@ -230,7 +295,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
 
         {/* [추가] 동영상 삽입 이미지 (800x450) */}
         {data.videoInsertImage && (
-          <section id="video-insert-section" className="pb-10 px-0 flex flex-col items-center bg-white">
+          <section id="video-insert-section" className="pb-10 px-0 flex flex-col items-center bg-white relative">
             <img 
               src={data.videoInsertImage} 
               className="w-full h-auto aspect-[16/9] object-cover block" 
@@ -282,6 +347,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                                 <span className="text-gray-300 font-bold">PACKAGE IMAGE</span>
                             </div>
                             )}
+                            <RenderWatermark targetKey="packageImage" isFixed={true} />
                         </div>
 
                         {/* Package Design Text */}
@@ -378,17 +444,18 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             >
               {data.productNameKr || "상품명"}
             </div>
-            <h3 className="text-5xl font-black text-gray-900 mb-6 uppercase">특징</h3>
+            <h3 className="text-5xl font-black text-gray-900 mb-6 uppercase">{data.featureTitle || "특징"}</h3>
              <div className="w-10 h-1 bg-gray-800"></div>
           </div>
 
           <div className="px-10">
-            <div className="w-full bg-gray-100 mb-12 overflow-hidden rounded-2xl shadow-sm">
+            <div className="w-full bg-gray-100 mb-12 overflow-hidden rounded-2xl shadow-sm relative">
                {data.featureImage ? (
                 <img src={data.featureImage} className="w-full h-auto block" alt="Feature" />
               ) : (
                 <div className="w-full aspect-video flex items-center justify-center text-gray-300 font-bold text-3xl">FEATURE IMAGE</div>
               )}
+               <RenderWatermark targetKey="featureImage" />
             </div>
             {data.aiFeatureDesc && (
             <div className="max-w-3xl mx-auto text-center px-4">
@@ -412,20 +479,21 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
               {data.productNameKr || "상품명"}
             </div>
             <span className="font-serif text-4xl font-bold italic text-gray-200 mb-[-20px] z-0">Point.01</span>
-            <h3 className="text-6xl font-black text-gray-900 z-10" style={{ textShadow: '2px 2px 0px #fff' }}>POINT 01</h3>
+            <h3 className="text-6xl font-black text-gray-900 z-10" style={{ textShadow: '2px 2px 0px #fff' }}>{data.point1Title || "POINT 01"}</h3>
              <div className="w-1 h-12 bg-gray-300 mt-4"></div>
           </div>
 
           <div className="px-10">
             {/* 기본 1세트 */}
-            {renderSubPoint(point1Image1, aiPoint1Desc, "01", "p1-1")}
+            {renderSubPoint(point1Image1, aiPoint1Desc, "01", "p1-1", 'point1Image1')}
             
             {/* 확장 2세트 (있을 때만) */}
             {renderSubPoint(
                 (data as any).point1Image2, 
                 (data as any).aiPoint1Desc2, 
                 "01", 
-                "p1-2"
+                "p1-2",
+                "point1Image2"
             )}
             
             {/* 확장 3세트 (있을 때만) */}
@@ -433,7 +501,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                 (data as any).point1Image3, 
                 (data as any).aiPoint1Desc3, 
                 "01", 
-                "p1-3"
+                "p1-3",
+                "point1Image3"
             )}
           </div>
         </section>
@@ -451,20 +520,21 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
               {data.productNameKr || "상품명"}
             </div>
             <span className="font-serif text-4xl font-bold italic text-gray-200 mb-[-20px] z-0">Point.02</span>
-            <h3 className="text-6xl font-black text-gray-900 z-10" style={{ textShadow: '2px 2px 0px #fff' }}>POINT 02</h3>
+            <h3 className="text-6xl font-black text-gray-900 z-10" style={{ textShadow: '2px 2px 0px #fff' }}>{data.point2Title || "POINT 02"}</h3>
              <div className="w-1 h-12 bg-gray-300 mt-4"></div>
           </div>
 
           <div className="px-10">
             {/* 기본 1세트 */}
-             {renderSubPoint(point2Image1, aiPoint2Desc, "02", "p2-1")}
+             {renderSubPoint(point2Image1, aiPoint2Desc, "02", "p2-1", 'point2Image1')}
 
             {/* 확장 2세트 */}
              {renderSubPoint(
                 (data as any).point2Image2, 
                 (data as any).aiPoint2Desc2, 
                 "02", 
-                "p2-2"
+                "p2-2",
+                "point2Image2"
             )}
 
             {/* 확장 3세트 */}
@@ -472,7 +542,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                 (data as any).point2Image3, 
                 (data as any).aiPoint2Desc3, 
                 "02", 
-                "p2-3"
+                "p2-3",
+                "point2Image3"
             )}
           </div>
         </section>
@@ -514,6 +585,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
               ) : (
                 <div className="w-full py-32 flex items-center justify-center text-gray-200 font-bold text-3xl">SIZE DETAIL</div>
               )}
+               <RenderWatermark targetKey="sizeImage" />
             </div>
 
             <p className="text-lg text-gray-500 font-bold">

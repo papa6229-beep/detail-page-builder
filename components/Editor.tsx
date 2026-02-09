@@ -8,9 +8,9 @@ import { COLOR_PRESETS } from '../constants';
 
 // 1. 공통 이미지 업로더
 const ImageUploader = React.memo(({ 
-  label, value, subLabel, isSmall = false, targetId, onDelete, onChange 
+  label, value, subLabel, isSmall = false, targetId, onDelete, onChange, onApplyWatermark, isWatermarkOn 
 }: { 
-  label: string, value: string | null, subLabel?: string, isSmall?: boolean, targetId?: string, onDelete?: () => void, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void 
+  label: string, value: string | null, subLabel?: string, isSmall?: boolean, targetId?: string, onDelete?: () => void, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, onApplyWatermark?: () => void, isWatermarkOn?: boolean 
 }) => {
   const hasImage = value && value !== '__ENABLED__';
   
@@ -43,8 +43,19 @@ const ImageUploader = React.memo(({
         <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onChange} onClick={(e) => (e.currentTarget.value = '')} />
       </div>
       
-      {/* 이미지 편집 버튼 */}
-      <div className="mt-2 flex justify-end">
+      {/* 이미지 편집 및 워터마크 버튼 */}
+      <div className="mt-2 flex justify-end gap-2">
+        {onApplyWatermark && hasImage && (
+            <button 
+                onClick={(e) => { e.stopPropagation(); onApplyWatermark(); }}
+                className={`text-xs px-2 py-1 rounded inline-flex items-center gap-1 transition-colors ${isWatermarkOn ? 'bg-purple-100 text-purple-700 font-bold' : 'bg-gray-100 text-gray-500 hover:text-purple-600'}`}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                {isWatermarkOn ? '워터마크 ON' : '워터마크 OFF'}
+            </button>
+        )}
         <a 
             href="https://new.express.adobe.com/" 
             target="_blank" 
@@ -137,6 +148,30 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
     }
   };
 
+  // 워터마크 적용 (토글 방식)
+  const applyWatermark = (targetKey: keyof ProductData) => {
+    if (!data.watermarkImage) {
+        alert('먼저 워터마크 이미지를 등록해주세요 (메인 이미지 섹션 상단)');
+        return;
+    }
+
+    const currentSetting = data.watermarkSettings?.[targetKey];
+    const isShown = currentSetting?.show;
+
+    // 토글 처리
+    onChange(prev => ({
+        ...prev,
+        watermarkSettings: {
+            ...prev.watermarkSettings,
+            [targetKey]: {
+                x: 0, y: 0, width: 100, height: 100, // 초기값 (Preview에서 자동 중앙 정렬됨)
+                ...(currentSetting || {}),
+                show: !isShown
+            }
+        }
+    }));
+  };
+
   // 컬러 변경
   const handleColorChange = (color: string) => {
     onChange(prev => ({ ...prev, themeColor: color }));
@@ -210,7 +245,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
         <div className="mt-4 pt-4 border-t border-dashed border-gray-200 animate-fade-in-down">
             <div className="text-xs font-bold text-gray-400 mb-2 uppercase">{prefix} - {n}</div>
             {isImgActive ? (
-                <ImageUploader label={`Image ${prefix === 'point1' ? '1' : '2'}-${n}`} value={(data as any)[imgKey]} targetId={targetId} onDelete={() => removeSlot(imgKey)} onChange={handleImageChange(imgKey)} />
+                <ImageUploader label={`Image ${prefix === 'point1' ? '1' : '2'}-${n}`} value={(data as any)[imgKey]} targetId={targetId} onDelete={() => removeSlot(imgKey)} onChange={handleImageChange(imgKey)} onApplyWatermark={() => applyWatermark(imgKey)} isWatermarkOn={data.watermarkSettings?.[imgKey]?.show} />
             ) : (
                 <button onClick={() => enableSlot(imgKey)} className="w-full py-2 mb-4 border border-dashed border-gray-200 rounded text-xs text-gray-400 hover:bg-gray-50">+ 이미지 추가</button>
             )}
@@ -263,7 +298,35 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
       {/* 2. 메인 이미지 */}
       <section className="space-y-4" onClick={() => scrollTo('preview-main')}>
         <h2 className="text-lg font-black text-gray-900 border-b pb-2">🖼️ 메인 이미지</h2>
-        <ImageUploader label="Main Image" value={data.mainImage} targetId="preview-main" onChange={handleImageChange('mainImage')} />
+        
+        {/* 워터마크 등록 영역 */}
+        <div className="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
+            <h3 className="text-sm font-bold text-purple-700 mb-2 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                워터마크 등록
+            </h3>
+            <div className="flex gap-4 items-center">
+                <div className="w-16 h-16 bg-white border border-purple-200 rounded-lg flex items-center justify-center overflow-hidden relative group cursor-pointer">
+                    {data.watermarkImage ? (
+                        <img src={data.watermarkImage} className="w-full h-full object-contain" alt="watermark" />
+                    ) : (
+                       <span className="text-purple-300 text-xs text-center leading-tight">IMG<br/>UPLOAD</span>
+                    )}
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageChange('watermarkImage')} title="워터마크 이미지 업로드" />
+                </div>
+                <div className="flex-1 text-xs text-gray-600">
+                    <p className="font-bold">투명 배경(PNG) 권장</p>
+                    <p>등록 후 각 이미지 섹션에서 '워터마크 삽입' 버튼을 눌러 적용하세요.</p>
+                </div>
+                {data.watermarkImage && (
+                    <button onClick={() => onChange(prev => ({ ...prev, watermarkImage: null }))} className="text-red-400 text-xs hover:text-red-600 underline">삭제</button>
+                )}
+            </div>
+        </div>
+
+        <ImageUploader label="Main Image" value={data.mainImage} targetId="preview-main" onChange={handleImageChange('mainImage')} onApplyWatermark={() => applyWatermark('mainImage')} isWatermarkOn={data.watermarkSettings?.['mainImage']?.show} />
       </section>
 
       {/* 3. 스펙 정보 */}
@@ -310,7 +373,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
         {data.isPackageImageEnabled && (
             <div className="grid grid-cols-2 gap-4 animate-fade-in-down">
-                <div className="col-span-1"><ImageUploader label="Package Image" value={data.packageImage} isSmall={true} targetId="preview-package" onChange={handleImageChange('packageImage')} /></div>
+                <div className="col-span-1"><ImageUploader label="Package Image" value={data.packageImage} isSmall={true} targetId="preview-package" onChange={handleImageChange('packageImage')} onApplyWatermark={() => applyWatermark('packageImage')} isWatermarkOn={data.watermarkSettings?.['packageImage']?.show} /></div>
                  <div className="col-span-1 flex items-center justify-center text-xs text-gray-400">패키지 이미지는<br/>작게 출력됩니다.</div>
             </div>
         )}
@@ -335,6 +398,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                     </div>
                     <input type="file" className="text-xs" onChange={(e) => updateOptionImage(opt.id, e)} />
                  </div>
+                 {/* 옵션 이미지에는 워터마크 버튼 아직 미구현 (구조상 복잡) - 일단 패스하거나 필요시 추가 */}
              </div>
          ))}
       </section>
@@ -352,7 +416,16 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                         <span className="text-xs font-bold text-gray-500">Main</span>
                         <button onClick={() => { removeSlot('featureImage'); removeSlot('aiFeatureDesc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제</button>
                     </div>
-                    <ImageUploader label="Feature Image" value={data.featureImage} targetId="preview-feature" onChange={handleImageChange('featureImage')} onDelete={() => removeSlot('featureImage')} />
+                    <div className="mb-3">
+                        <input 
+                            type="text" 
+                            className="w-full p-2 border border-gray-200 rounded text-sm placeholder-gray-400 bg-white"
+                            placeholder="섹션 타이틀 (기본값: 특징)"
+                            value={data.featureTitle || ''} 
+                            onChange={(e) => onChange(prev => ({ ...prev, featureTitle: e.target.value }))}
+                        />
+                    </div>
+                    <ImageUploader label="Feature Image" value={data.featureImage} targetId="preview-feature" onChange={handleImageChange('featureImage')} onDelete={() => removeSlot('featureImage')} onApplyWatermark={() => applyWatermark('featureImage')} isWatermarkOn={data.watermarkSettings?.['featureImage']?.show} />
                     <Textarea label="AI 설명" value={data.aiFeatureDesc} placeholder="AI 작성 영역" targetId="preview-feature" onChange={handleTextChange('aiFeatureDesc')} onDelete={() => removeSlot('aiFeatureDesc')} />
                 </>
             ) : (
@@ -369,7 +442,16 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                     <span className="text-xs font-bold text-gray-500">Main</span>
                     <button onClick={() => { removeSlot('point1Image1'); removeSlot('aiPoint1Desc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제 (전체)</button>
                 </div>
-                <ImageUploader label="Image 1-1" value={data.point1Image1} targetId="preview-point1" onChange={handleImageChange('point1Image1')} onDelete={() => removeSlot('point1Image1')} />
+                <div className="mb-3">
+                    <input 
+                        type="text" 
+                        className="w-full p-2 border border-gray-200 rounded text-sm placeholder-gray-400 bg-white"
+                        placeholder="섹션 타이틀 (기본값: POINT 01)"
+                        value={data.point1Title || ''} 
+                        onChange={(e) => onChange(prev => ({ ...prev, point1Title: e.target.value }))}
+                    />
+                </div>
+                <ImageUploader label="Image 1-1" value={data.point1Image1} targetId="preview-point1" onChange={handleImageChange('point1Image1')} onDelete={() => removeSlot('point1Image1')} onApplyWatermark={() => applyWatermark('point1Image1')} isWatermarkOn={data.watermarkSettings?.['point1Image1']?.show} />
                 <Textarea label="설명 1-1" value={data.aiPoint1Desc} placeholder="AI 작성 영역" targetId="preview-point1" onChange={handleTextChange('aiPoint1Desc')} onDelete={() => removeSlot('aiPoint1Desc')} />
                 
                 {renderSubPoint(2, 'point1', 'preview-point1')}
@@ -389,7 +471,16 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                      <span className="text-xs font-bold text-gray-500">Main</span>
                      <button onClick={() => { removeSlot('point2Image1'); removeSlot('aiPoint2Desc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제</button>
                  </div>
-                 <ImageUploader label="Image 2-1" value={data.point2Image1} targetId="preview-point2" onChange={handleImageChange('point2Image1')} onDelete={() => removeSlot('point2Image1')} />
+                 <div className="mb-3">
+                    <input 
+                        type="text" 
+                        className="w-full p-2 border border-gray-200 rounded text-sm placeholder-gray-400 bg-white"
+                        placeholder="섹션 타이틀 (기본값: POINT 02)"
+                        value={data.point2Title || ''} 
+                        onChange={(e) => onChange(prev => ({ ...prev, point2Title: e.target.value }))}
+                    />
+                 </div>
+                 <ImageUploader label="Image 2-1" value={data.point2Image1} targetId="preview-point2" onChange={handleImageChange('point2Image1')} onDelete={() => removeSlot('point2Image1')} onApplyWatermark={() => applyWatermark('point2Image1')} isWatermarkOn={data.watermarkSettings?.['point2Image1']?.show} />
                  <Textarea label="설명 2-1" value={data.aiPoint2Desc} placeholder="AI 작성 영역" targetId="preview-point2" onChange={handleTextChange('aiPoint2Desc')} onDelete={() => removeSlot('aiPoint2Desc')} />
                  
                  {renderSubPoint(2, 'point2', 'preview-point2')}
@@ -404,8 +495,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-size')}>
             <h2 className="text-md font-bold text-gray-900 mb-3">📏 사이즈 및 썸네일</h2>
             <div className="grid grid-cols-2 gap-4">
-                <ImageUploader label="Size Detail" value={data.sizeImage} targetId="preview-size" onChange={handleImageChange('sizeImage')} onDelete={() => removeSlot('sizeImage')} />
-                <ImageUploader label="Thumbnail" value={data.thumbnailImage} targetId="preview-size" onChange={handleImageChange('thumbnailImage')} onDelete={() => removeSlot('thumbnailImage')} />
+                <ImageUploader label="Size Detail" value={data.sizeImage} targetId="preview-size" onChange={handleImageChange('sizeImage')} onDelete={() => removeSlot('sizeImage')} onApplyWatermark={() => applyWatermark('sizeImage')} isWatermarkOn={data.watermarkSettings?.['sizeImage']?.show} />
+                <ImageUploader label="Thumbnail" value={data.thumbnailImage} targetId="preview-size" onChange={handleImageChange('thumbnailImage')} onDelete={() => removeSlot('thumbnailImage')} onApplyWatermark={() => applyWatermark('thumbnailImage')} isWatermarkOn={data.watermarkSettings?.['thumbnailImage']?.show} />
             </div>
          </div>
       </section>

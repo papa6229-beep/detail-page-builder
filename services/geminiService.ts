@@ -1,5 +1,5 @@
-/// <reference types="vite/client" />  <-- 1. 이 줄 추가
-import { ProductData } from "../types"; // <-- 2. 원래 있던 코드
+/// <reference types="vite/client" />
+import { ProductData } from "../types";
 
 
 // ✅ 중요: 코드가 Vercel 설정을 바라보게 변경했습니다.
@@ -77,7 +77,7 @@ export const generateCopywriting = async (
  2. **2단계 (스펙 매칭 및 문구 작성)**:
     - 1단계에서 파악한 이미지 내용과 '스펙 정보(요약정보)'를 연결하여 문구를 작성하세요.
     - (예: 이미지에서 '선'이 보이면 -> 스펙의 '충전 방식'을 확인 -> "자석식 충전 케이블"이라고 정확히 명시)
-
+ 
  ⭐ **[소품/구성품 해석 가이드]**:
  - **리모컨** 발견 시 -> 스펙의 '리모컨' 여부와 연결하여 "멀리서도 자유로운 무선 조작" 강조.
  - **USB 케이블** 발견 시 -> 스펙의 '전원/충전' 정보와 연결하여 "어디서나 간편한 USB 충전" 강조.

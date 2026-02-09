@@ -48,6 +48,11 @@ export interface ProductData {
   videoInsertImage: string | null; // [추가] 동영상 삽입 (이미지)
   thumbnailImage: string | null;
 
+  // [추가] 워터마크 이미지
+  watermarkImage?: string | null;
+  // [추가] 워터마크 개별 설정 (키: 이미지 필드명)
+  watermarkSettings?: Record<string, { x: number, y: number, width: number, height: number, show: boolean }>;
+
   // Toggle Flags
   isPackageImageEnabled?: boolean;
   
@@ -58,14 +63,17 @@ export interface ProductData {
   // AI Generated Text
   aiSummary: string;
   aiFeatureDesc: string;
+  featureTitle?: string; // [추가] 특징 섹션 타이틀
   
   // POINT 1 Descriptions
   aiPoint1Desc: string;
+  point1Title?: string; // [추가] Point 1 섹션 타이틀
   aiPoint1Desc2?: string; // [추가] 선택형 설명 2
   aiPoint1Desc3?: string; // [추가] 선택형 설명 3
 
   // POINT 2 Descriptions
   aiPoint2Desc: string;
+  point2Title?: string; // [추가] Point 2 섹션 타이틀
   aiPoint2Desc2?: string; // [추가] 선택형 설명 2
   aiPoint2Desc3?: string; // [추가] 선택형 설명 3
 }

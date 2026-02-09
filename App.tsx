@@ -233,6 +233,50 @@ const App: React.FC = () => {
     }));
   };
 
+  // ✅ 워터마크 레이아웃 변경 핸들러
+  const handleWatermarkLayoutChange = (id: string, layout: { x: number, y: number, width: number, height: number }) => {
+    setData(prev => ({
+        ...prev,
+        watermarkSettings: {
+            ...prev.watermarkSettings,
+            [id]: { ...prev.watermarkSettings?.[id], ...layout, show: true }
+        }
+    }));
+  };
+
+  // ✅ 모든 워터마크 일괄 적용/해제 토글
+  const toggleAllWatermarks = () => {
+    if (!data.watermarkImage) {
+        alert('먼저 워터마크 이미지를 등록해주세요 (메인 이미지 섹션)');
+        return;
+    }
+
+    const targetKeys = [
+        'mainImage', 'featureImage', 
+        'point1Image1', 'point1Image2', 'point1Image3',
+        'point2Image1', 'point2Image2', 'point2Image3',
+        'sizeImage', 'thumbnailImage', 'packageImage'
+    ];
+    
+    // 현재 하나라도 켜져 있으면 -> 전체 끄기, 다 꺼져 있으면 -> 전체 켜기
+    const isAnyOn = targetKeys.some(key => data.watermarkSettings?.[key]?.show);
+    const nextState = !isAnyOn;
+
+    const newSettings = { ...data.watermarkSettings };
+    targetKeys.forEach(key => {
+        // 이미지가 있는 경우에만 적용
+        if ((data as any)[key]) {
+             newSettings[key] = {
+                 x: 0, y: 0, width: 100, height: 100, // 초기값 (Preview에서 자동 조정됨)
+                 ...(newSettings[key] || {}),
+                 show: nextState
+             };
+        }
+    });
+
+    setData(prev => ({ ...prev, watermarkSettings: newSettings }));
+  };
+
   // ✅ 임시 저장 함수
   const saveTemporary = () => {
     try {
@@ -277,6 +321,11 @@ const App: React.FC = () => {
           <h1 className="font-bold text-gray-800 text-lg">상세페이지 빌더 v3.0</h1>
         </div>
         <div className="flex gap-2">
+           <button onClick={toggleAllWatermarks} className="px-3 py-2 border border-purple-200 text-purple-600 bg-purple-50 rounded text-sm font-bold hover:bg-purple-100 transition-colors flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+            모든 워터마크 {data.watermarkSettings && Object.values(data.watermarkSettings).some(s => s.show) ? '끄기' : '켜기'}
+           </button>
+           <div className="w-px h-8 bg-gray-200 mx-1"></div>
            <button onClick={saveTemporary} className="px-3 py-2 border border-blue-200 text-blue-600 bg-blue-50 rounded text-sm font-bold hover:bg-blue-100 transition-colors">임시 저장</button>
            <button onClick={loadTemporary} className="px-3 py-2 border border-gray-300 text-gray-600 bg-white rounded text-sm font-bold hover:bg-gray-50 transition-colors">불러오기</button>
            <div className="w-px h-8 bg-gray-200 mx-1"></div>
@@ -308,6 +357,7 @@ const App: React.FC = () => {
                     ref={detailRef} 
                     onOptionLayoutChange={handleOptionLayoutChange} 
                     onPackageLayoutChange={handlePackageLayoutChange}
+                    onWatermarkLayoutChange={handleWatermarkLayoutChange}
                  />
               </div>
 
