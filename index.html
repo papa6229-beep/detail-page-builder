@@ -1,25 +1,62 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Detail Page Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-  tailwind.config = {
-    theme: {
-      fontFamily: {
-        sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-      },
-    },
-  }
-</script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
-/>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: [
+                '"Fira Sans"',
+                "Pretendard",
+                "-apple-system",
+                "system-ui",
+                "sans-serif",
+              ],
+              mono: ['"Fira Code"', "monospace"],
+            },
+            colors: {
+              brand: {
+                bg: "#020617",
+                surface: "#0F172A",
+                cta: "#22C55E",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Fira+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
     <style>
+        :root {
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
+            --space-3xl: 64px;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
+        }
         body {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
             background-color: #f3f4f6;
@@ -42,21 +79,21 @@
             background: #555;
         }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
-    "html-to-image": "https://esm.sh/html-to-image@^1.11.13",
-    "html2canvas": "https://esm.sh/html2canvas@^1.4.1"
-  }
-}
-</script>
-</head>
-<body>
-<div id="root"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@^19.2.3",
+          "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+          "react/": "https://esm.sh/react@^19.2.3/",
+          "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+          "html-to-image": "https://esm.sh/html-to-image@^1.11.13",
+          "html2canvas": "https://esm.sh/html2canvas@^1.4.1"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
-</body>
+  </body>
 </html>

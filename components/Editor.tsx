@@ -25,8 +25,8 @@ const ImageUploader = React.memo(({
     <div className="mb-4" onClick={scrollToPreview}>
       {/* 1. 상단 라벨 및 삭제 버튼 영역 */}
       <div className="flex justify-between items-end mb-1">
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide cursor-default">
-              {label} <span className="text-gray-300 font-normal">{subLabel}</span>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide cursor-default">
+              {label} <span className="text-slate-500 font-normal">{subLabel}</span>
           </label>
           {onDelete && value && (
               <button 
@@ -42,12 +42,12 @@ const ImageUploader = React.memo(({
 
       {/* 2. 업로드 영역 (Label로 감싸서 클릭 시 파일 선택창 자동 활성화) */}
       <label 
-        className={`relative block w-full ${isSmall ? 'h-32' : 'aspect-video'} bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg overflow-hidden hover:border-gray-400 transition-colors group cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent`}
+        className={`relative block w-full ${isSmall ? 'h-32' : 'aspect-video'} bg-[#0F172A]/50 border-2 border-dashed border-white/10 rounded-lg overflow-hidden hover:border-white/20 transition-all duration-200 ease-out group cursor-pointer focus-within:ring-2 focus-within:ring-[#22C55E] focus-within:border-transparent shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-xl)]`}
       >
         {hasImage ? (
           <img src={value} alt={label} className="w-full h-full object-contain bg-white" />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-300">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
             <span className="text-2xl mb-1" aria-hidden="true">+</span>
             <span className="text-[10px] font-bold">UPLOAD</span>
           </div>
@@ -68,7 +68,7 @@ const ImageUploader = React.memo(({
         {onApplyWatermark && hasImage && (
             <button 
                 onClick={(e) => { e.stopPropagation(); onApplyWatermark(); }}
-                className={`text-xs px-2 py-1 rounded inline-flex items-center gap-1 transition-colors ${isWatermarkOn ? 'bg-purple-100 text-purple-700 font-bold' : 'bg-gray-100 text-gray-500 hover:text-purple-600'}`}
+                className={`text-xs px-2 py-1 rounded inline-flex items-center gap-1 transition-all duration-200 ease-out ${isWatermarkOn ? 'bg-purple-900/40 text-purple-400 font-bold' : 'bg-white/5 text-slate-400 hover:text-purple-400'}`}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -81,7 +81,7 @@ const ImageUploader = React.memo(({
             href="https://new.express.adobe.com/" 
             target="_blank" 
             rel="noreferrer"
-            className="text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-xs font-bold px-4 py-2 rounded-full inline-flex items-center gap-1.5 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 focus:ring-2 focus:ring-violet-300 focus:outline-none"
+            className="text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-xs font-bold px-4 py-2 rounded-full inline-flex items-center gap-1.5 transition-all duration-200 ease-out shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transform hover:-translate-y-0.5 focus:ring-2 focus:ring-violet-300 focus:outline-none"
             onClick={(e) => e.stopPropagation()} 
         >
             <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,11 +111,11 @@ const Textarea = React.memo(({
   return (
     <div className="mb-5" onFocus={handleFocus}>
       <div className="flex justify-between items-end mb-2">
-          <label className="block text-xs font-bold text-gray-700">{label}</label>
+          <label className="block text-xs font-bold text-slate-500">{label}</label>
           {onDelete && value && <button onClick={onDelete} className="text-[10px] text-red-400 font-bold hover:text-red-600 underline">삭제</button>}
       </div>
       <textarea
-        className="w-full p-3 border border-gray-200 rounded-lg text-sm leading-relaxed focus:ring-2 focus:ring-black outline-none transition-shadow resize-y"
+        className="w-full p-3 bg-[#0F172A]/50 border border-white/10 rounded-lg text-sm leading-relaxed text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-[#22C55E] outline-none transition-all duration-200 ease-out shadow-[var(--shadow-sm)] focus:shadow-[var(--shadow-md)] resize-y"
         value={value === '__ENABLED__' ? '' : value || ''}
         onChange={onChange}
         placeholder={placeholder}
@@ -256,24 +256,24 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
     if (!isImgActive && !isDescActive) {
         return (
             <div className="flex gap-2 mt-4">
-                <button onClick={() => enableSlot(imgKey)} className="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all text-xs">+ 이미지 ({prefix}-{n})</button>
-                <button onClick={() => enableSlot(descKey)} className="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-green-400 hover:text-green-500 hover:bg-green-50 transition-all text-xs">+ 설명 ({prefix}-{n})</button>
+                <button onClick={() => enableSlot(imgKey)} className="flex-1 py-3 border-2 border-dashed border-white/10 rounded-lg text-slate-500 font-bold hover:border-blue-400/50 hover:text-blue-400 hover:bg-blue-900/10 transition-all duration-200 ease-out text-xs shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]">+ 이미지 ({prefix}-{n})</button>
+                <button onClick={() => enableSlot(descKey)} className="flex-1 py-3 border-2 border-dashed border-white/10 rounded-lg text-slate-500 font-bold hover:border-green-400/50 hover:text-green-400 hover:bg-green-900/10 transition-all duration-200 ease-out text-xs shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]">+ 설명 ({prefix}-{n})</button>
             </div>
         );
     }
 
     return (
-        <div className="mt-4 pt-4 border-t border-dashed border-gray-200 animate-fade-in-down">
-            <div className="text-xs font-bold text-gray-400 mb-2 uppercase">{prefix} - {n}</div>
+        <div className="mt-4 pt-4 border-t border-dashed border-white/10 animate-fade-in-down">
+            <div className="text-xs font-bold text-slate-500 mb-2 uppercase">{prefix} - {n}</div>
             {isImgActive ? (
                 <ImageUploader label={`Image ${prefix === 'point1' ? '1' : '2'}-${n}`} value={(data as any)[imgKey]} targetId={targetId} onDelete={() => removeSlot(imgKey)} onChange={handleImageChange(imgKey)} onApplyWatermark={() => applyWatermark(imgKey)} isWatermarkOn={data.watermarkSettings?.[imgKey]?.show} />
             ) : (
-                <button onClick={() => enableSlot(imgKey)} className="w-full py-2 mb-4 border border-dashed border-gray-200 rounded text-xs text-gray-400 hover:bg-gray-50">+ 이미지 추가</button>
+                <button onClick={() => enableSlot(imgKey)} className="w-full py-2 mb-4 border border-dashed border-white/10 rounded text-xs text-slate-500 hover:bg-white/5 transition-all duration-200 ease-out shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]">+ 이미지 추가</button>
             )}
             {isDescActive ? (
                 <Textarea label={`설명 ${prefix === 'point1' ? '1' : '2'}-${n}`} value={(data as any)[descKey]} placeholder="AI 작성 영역" targetId={targetId} onDelete={() => removeSlot(descKey)} onChange={handleTextChange(descKey)} />
             ) : (
-                <button onClick={() => enableSlot(descKey)} className="w-full py-2 border border-dashed border-gray-200 rounded text-xs text-gray-400 hover:bg-gray-50">+ 설명 추가</button>
+                <button onClick={() => enableSlot(descKey)} className="w-full py-2 border border-dashed border-white/10 rounded text-xs text-slate-500 hover:bg-white/5 transition-all duration-200 ease-out shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]">+ 설명 추가</button>
             )}
         </div>
     );
@@ -289,55 +289,55 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
       
       {/* 1. 기본 설정 */}
       <section className="space-y-4" onClick={() => scrollTo('preview-top')}>
-        <h2 className="text-lg font-black text-gray-900 border-b pb-2">📂 기본 설정</h2>
+        <h2 className="text-lg font-black text-white border-b border-white/10 pb-2 font-mono">📂 기본 설정</h2>
         <div className="mb-4">
-            <label className="block text-sm font-bold text-gray-700 mb-2">컬러 테마</label>
+            <label className="block text-sm font-bold text-slate-500 mb-2">컬러 테마</label>
             <div className="flex gap-2 flex-wrap mb-2">
                 {COLOR_PRESETS.map(p => (
-                    <button key={p.value} onClick={() => handleColorChange(p.value)} className={`w-8 h-8 rounded-full border-2 transition-transform ${data.themeColor === p.value ? 'border-gray-600 scale-110' : 'border-transparent hover:scale-105'}`} style={{ background: p.value }} title={(p as any).label || p.value} />
+                    <button key={p.value} onClick={() => handleColorChange(p.value)} className={`w-8 h-8 rounded-full border-2 transition-all duration-200 ease-out shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] ${data.themeColor === p.value ? 'border-gray-600 scale-110' : 'border-transparent hover:scale-105'}`} style={{ background: p.value }} title={(p as any).label || p.value} />
                 ))}
             </div>
              <div className="flex gap-2">
-                <input type="color" className="w-10 h-10 rounded cursor-pointer border-none" value={data.themeColor} onChange={(e) => handleColorChange(e.target.value)} />
-                <input type="text" className="flex-1 p-2 border border-gray-300 rounded uppercase text-sm" value={data.themeColor} onChange={(e) => handleColorChange(e.target.value)} />
+                <input type="color" className="w-10 h-10 rounded cursor-pointer border-none bg-transparent" value={data.themeColor} onChange={(e) => handleColorChange(e.target.value)} />
+                <input type="text" className="flex-1 p-2 border border-white/10 bg-[#0F172A]/50 text-slate-200 rounded uppercase text-sm" value={data.themeColor} onChange={(e) => handleColorChange(e.target.value)} />
              </div>
         </div>
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1">상품명 (한글)</label>
-          <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-bold" value={data.productNameKr} onChange={handleTextChange('productNameKr')} onFocus={() => scrollTo('preview-top')} placeholder="예: 바나나 오나홀" />
+          <label className="block text-sm font-bold text-slate-500 mb-1">상품명 (한글)</label>
+          <input type="text" className="w-full p-3 border border-white/10 bg-[#0F172A]/50 text-slate-200 rounded-lg font-bold placeholder-slate-500 focus:ring-2 focus:ring-[#22C55E] outline-none transition-all duration-200 ease-out shadow-[var(--shadow-sm)] focus:shadow-[var(--shadow-md)]" value={data.productNameKr} onChange={handleTextChange('productNameKr')} onFocus={() => scrollTo('preview-top')} placeholder="예: 바나나 오나홀" />
         </div>
         <div>
-           <label className="block text-sm font-bold text-gray-700 mb-1">영문 상품명</label>
-           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium font-montserrat" value={data.productNameEn} onChange={handleTextChange('productNameEn')} onFocus={() => scrollTo('preview-top')} placeholder="BANANA ONAHOLE" />
+           <label className="block text-sm font-bold text-slate-500 mb-1">영문 상품명</label>
+           <input type="text" className="w-full p-3 border border-white/10 bg-[#0F172A]/50 text-slate-200 rounded-lg font-medium font-montserrat placeholder-slate-500 focus:ring-2 focus:ring-[#22C55E] outline-none transition-all duration-200 ease-out shadow-[var(--shadow-sm)] focus:shadow-[var(--shadow-md)]" value={data.productNameEn} onChange={handleTextChange('productNameEn')} onFocus={() => scrollTo('preview-top')} placeholder="BANANA ONAHOLE" />
         </div>
         <div>
-           <label className="block text-sm font-bold text-gray-700 mb-1">제조사/브랜드명</label>
-           <input type="text" className="w-full p-3 border border-gray-300 rounded-lg font-medium text-gray-600" value={data.brandName} onChange={handleTextChange('brandName')} onFocus={() => scrollTo('preview-top')} placeholder="예: BANANA MALL" />
+           <label className="block text-sm font-bold text-slate-500 mb-1">제조사/브랜드명</label>
+           <input type="text" className="w-full p-3 border border-white/10 bg-[#0F172A]/50 text-slate-200 rounded-lg font-medium placeholder-slate-500 focus:ring-2 focus:ring-[#22C55E] outline-none transition-all duration-200 ease-out shadow-[var(--shadow-sm)] focus:shadow-[var(--shadow-md)]" value={data.brandName} onChange={handleTextChange('brandName')} onFocus={() => scrollTo('preview-top')} placeholder="예: BANANA MALL" />
         </div>
       </section>
 
       {/* 2. 메인 이미지 */}
       <section className="space-y-4" onClick={() => scrollTo('preview-main')}>
-        <h2 className="text-lg font-black text-gray-900 border-b pb-2">🖼️ 메인 이미지</h2>
+        <h2 className="text-lg font-black text-white border-b border-white/10 pb-2 font-mono">🖼️ 메인 이미지</h2>
         
         {/* 워터마크 등록 영역 */}
-        <div className="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100">
-            <h3 className="text-sm font-bold text-purple-700 mb-2 flex items-center gap-1">
+        <div className="mb-6 p-4 bg-purple-900/20 rounded-xl border border-purple-500/30 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out">
+            <h3 className="text-sm font-bold text-purple-400 mb-2 flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
                 워터마크 등록
             </h3>
             <div className="flex gap-4 items-center">
-                <div className="w-16 h-16 bg-white border border-purple-200 rounded-lg flex items-center justify-center overflow-hidden relative group cursor-pointer">
+                <div className="w-16 h-16 bg-white/5 border border-purple-500/30 rounded-lg flex items-center justify-center overflow-hidden relative group cursor-pointer">
                     {data.watermarkImage ? (
                         <img src={data.watermarkImage} className="w-full h-full object-contain" alt="watermark" />
                     ) : (
-                       <span className="text-purple-300 text-xs text-center leading-tight">IMG<br/>UPLOAD</span>
+                       <span className="text-purple-400 text-xs text-center leading-tight">IMG<br/>UPLOAD</span>
                     )}
                     <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageChange('watermarkImage')} title="워터마크 이미지 업로드" />
                 </div>
-                <div className="flex-1 text-xs text-gray-600">
+                <div className="flex-1 text-xs text-slate-500">
                     <p className="font-bold">투명 배경(PNG) 권장</p>
                     <p>등록 후 각 이미지 섹션에서 '워터마크 삽입' 버튼을 눌러 적용하세요.</p>
                 </div>
@@ -352,19 +352,19 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
       {/* 3. 스펙 정보 */}
       <section className="space-y-4" onClick={() => scrollTo('preview-spec')}>
-         <h2 className="text-lg font-black text-gray-900 border-b pb-2">📝 스펙 정보</h2>
+         <h2 className="text-lg font-black text-white border-b border-white/10 pb-2 font-mono">📝 스펙 정보</h2>
          <div className="grid grid-cols-2 gap-3">
             {Object.keys(SPEC_LABELS).map((key) => (
               <div key={key}>
-                 <label className="block text-xs font-bold text-gray-500 mb-1 capitalize">{SPEC_LABELS[key]}</label>
-                 <input type="text" className="w-full p-2 border border-gray-200 rounded text-sm" value={(data.summaryInfo as any)[key] || ''} onChange={handleSummaryChange(key)} onFocus={() => scrollTo('preview-spec')} />
+                 <label className="block text-xs font-bold text-slate-500 mb-1 capitalize">{SPEC_LABELS[key]}</label>
+                 <input type="text" className="w-full p-2 border border-white/10 bg-[#0F172A]/50 text-slate-200 rounded text-sm outline-none focus:ring-1 focus:ring-[#22C55E]" value={(data.summaryInfo as any)[key] || ''} onChange={handleSummaryChange(key)} onFocus={() => scrollTo('preview-spec')} />
               </div>
             ))}
          </div>
          <Textarea label="AI 생성 참고용 핵심 요약" value={data.aiSummary} placeholder="예: 강력한 진동, 부드러운 실리콘 재질..." rows={2} targetId="preview-spec" onChange={handleTextChange('aiSummary')} />
          
          {/* [추가] 동영상 삽입 (800x450) */}
-         <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
+         <div className="mt-4 pt-4 border-t border-dashed border-white/10">
             <ImageUploader 
                 label="동영상 삽입 (이미지)" 
                 subLabel="800x450 권장" 
@@ -378,8 +378,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
       {/* 4. 패키지 이미지 정보 (분리됨) */}
       <section className="space-y-4" onClick={() => scrollTo('preview-package')}>
-        <div className="flex justify-between items-center border-b pb-2">
-            <h2 className="text-lg font-black text-gray-900">📦 패키지 이미지 설정</h2>
+        <div className="flex justify-between items-center border-b border-white/10 pb-2">
+            <h2 className="text-lg font-black text-white font-mono">📦 패키지 이미지 설정</h2>
             <label className="relative inline-flex items-center cursor-pointer">
                 <input 
                     type="checkbox" 
@@ -387,8 +387,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                     checked={data.isPackageImageEnabled ?? true} 
                     onChange={(e) => onChange(prev => ({ ...prev, isPackageImageEnabled: e.target.checked }))} 
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                <span className="ml-3 text-sm font-medium text-gray-900">{data.isPackageImageEnabled ? 'ON' : 'OFF'}</span>
+                <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all duration-200 ease-out peer-checked:bg-[#22C55E] shadow-sm"></div>
+                <span className="ml-3 text-sm font-medium text-slate-500">{data.isPackageImageEnabled ? 'ON' : 'OFF'}</span>
             </label>
         </div>
 
@@ -401,21 +401,21 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
       </section>
 
       {/* 5. 옵션 */}
-      <section className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-option')}>
+      <section className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onClick={() => scrollTo('preview-option')}>
          <div className="flex justify-between items-center mb-4">
-             <h2 className="text-md font-bold text-gray-900">✨ 추가 옵션 (Option)</h2>
-             <button onClick={addOption} className="text-xs bg-black text-white px-3 py-1.5 rounded hover:bg-gray-800">+ 추가</button>
+             <h2 className="text-md font-bold text-white font-mono">✨ 추가 옵션 (Option)</h2>
+             <button onClick={addOption} className="text-xs bg-white/10 text-slate-400 px-3 py-1.5 rounded hover:bg-white/20 hover:text-white transition-all duration-200 ease-out shadow-sm hover:shadow-md">+ 추가</button>
          </div>
          {data.options.map((opt, i) => (
-             <div key={opt.id} className="bg-white p-3 rounded border border-gray-200 mb-3 last:mb-0 relative" onFocus={() => scrollTo('preview-option')}>
+             <div key={opt.id} className="bg-[#0F172A]/50 p-3 rounded-lg border border-white/10 mb-3 last:mb-0 relative shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onFocus={() => scrollTo('preview-option')}>
                  <div className="flex justify-between items-center mb-2">
-                    <div className="text-xs font-bold text-gray-400">Option {i + 1}</div>
-                    <button onClick={() => removeOption(opt.id)} className="text-red-500 text-xs font-bold hover:underline px-2">삭제</button>
+                    <div className="text-xs font-bold text-slate-400">Option {i + 1}</div>
+                    <button onClick={() => removeOption(opt.id)} className="text-red-400 text-xs font-bold hover:underline px-2">삭제</button>
                  </div>
-                 <input type="text" value={opt.name} onChange={(e) => updateOptionName(opt.id, e.target.value)} placeholder="옵션명" className="w-full p-2 border border-gray-200 rounded text-sm mb-2" />
+                 <input type="text" value={opt.name} onChange={(e) => updateOptionName(opt.id, e.target.value)} placeholder="옵션명" className="w-full p-2 bg-[#0F172A]/50 border border-white/10 rounded text-sm mb-2 text-slate-200 outline-none focus:ring-1 focus:ring-[#22C55E]" />
                  <div className="flex items-center gap-3">
-                    <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0 border">
-                        {opt.image ? <img src={opt.image} className="w-full h-full object-cover" alt="opt" /> : <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No Img</div>}
+                    <div className="w-16 h-16 bg-white/5 rounded overflow-hidden flex-shrink-0 border border-white/10">
+                        {opt.image ? <img src={opt.image} className="w-full h-full object-cover" alt="opt" /> : <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">No Img</div>}
                     </div>
                     <input type="file" className="text-xs" onChange={(e) => updateOptionImage(opt.id, e)} />
                  </div>
@@ -426,21 +426,21 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
       {/* 5. 상세 포인트 */}
       <section className="space-y-6">
-         <h2 className="text-lg font-black text-gray-900 border-b pb-2">✨ 상세 포인트</h2>
+         <h2 className="text-lg font-black text-white border-b border-white/10 pb-2 font-mono">✨ 상세 포인트</h2>
          
          {/* Feature */}
-         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-feature')}>
-            <h3 className="font-bold text-gray-800 mb-3">Feature (핵심 특징)</h3>
+         <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onClick={() => scrollTo('preview-feature')}>
+            <h3 className="font-bold text-slate-300 mb-3">Feature (핵심 특징)</h3>
             {data.featureImage || data.aiFeatureDesc ? (
                 <>
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-gray-500">Main</span>
+                        <span className="text-xs font-bold text-slate-400">Main</span>
                         <button onClick={() => { removeSlot('featureImage'); removeSlot('aiFeatureDesc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제</button>
                     </div>
                     <div className="mb-3">
                         <input 
                             type="text" 
-                            className="w-full p-2 border border-gray-200 rounded text-sm placeholder-gray-400 bg-white"
+                            className="w-full p-2 border border-white/10 bg-[#0F172A]/50 text-slate-200 rounded text-sm placeholder-slate-500 outline-none focus:ring-1 focus:ring-[#22C55E]"
                             placeholder="섹션 타이틀 (기본값: 특징)"
                             value={data.featureTitle || ''} 
                             onChange={(e) => onChange(prev => ({ ...prev, featureTitle: e.target.value }))}
@@ -450,23 +450,23 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                     <Textarea label="AI 설명" value={data.aiFeatureDesc} placeholder="AI 작성 영역" targetId="preview-feature" onChange={handleTextChange('aiFeatureDesc')} onDelete={() => removeSlot('aiFeatureDesc')} />
                 </>
             ) : (
-                <button onClick={() => { enableSlot('featureImage'); enableSlot('aiFeatureDesc'); }} className="w-full py-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50 transition-all">+ Feature 섹션 추가하기</button>
+                <button onClick={() => { enableSlot('featureImage'); enableSlot('aiFeatureDesc'); }} className="w-full py-6 border-2 border-dashed border-white/10 rounded-lg text-slate-500 font-bold hover:border-blue-400/50 hover:text-blue-400 hover:bg-blue-900/10 transition-all duration-200 ease-out shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]">+ Feature 섹션 추가하기</button>
             )}
          </div>
 
          {/* Point 1 */}
-         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-point1')}>
-            <h3 className="font-bold text-gray-800 mb-3">Point 01</h3>
+         <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onClick={() => scrollTo('preview-point1')}>
+            <h3 className="font-bold text-slate-300 mb-3">Point 01</h3>
             {data.point1Image1 || data.aiPoint1Desc || (data as any).point1Image2 || (data as any).point1Image3 ? (
              <>
                 <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-bold text-gray-500">Main</span>
+                    <span className="text-xs font-bold text-slate-400">Main</span>
                     <button onClick={() => { removeSlot('point1Image1'); removeSlot('aiPoint1Desc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제 (전체)</button>
                 </div>
-                <div className="mb-3">
+                    <div className="mb-3">
                     <input 
                         type="text" 
-                        className="w-full p-2 border border-gray-200 rounded text-sm placeholder-gray-400 bg-white"
+                        className="w-full p-2 border border-white/10 bg-[#0F172A]/50 text-slate-200 rounded text-sm placeholder-slate-500 outline-none focus:ring-1 focus:ring-[#22C55E]"
                         placeholder="섹션 타이틀 (기본값: POINT 01)"
                         value={data.point1Title || ''} 
                         onChange={(e) => onChange(prev => ({ ...prev, point1Title: e.target.value }))}
@@ -479,23 +479,23 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                 {renderSubPoint(3, 'point1', 'preview-point1')}
              </>
             ) : (
-                <button onClick={() => { enableSlot('point1Image1'); enableSlot('aiPoint1Desc'); }} className="w-full py-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50 transition-all">+ Point 01 섹션 추가하기</button>
+                <button onClick={() => { enableSlot('point1Image1'); enableSlot('aiPoint1Desc'); }} className="w-full py-6 border-2 border-dashed border-white/10 rounded-lg text-slate-500 font-bold hover:border-blue-400/50 hover:text-blue-400 hover:bg-blue-900/10 transition-all duration-200 ease-out shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]">+ Point 01 섹션 추가하기</button>
             )}
          </div>
 
          {/* Point 2 */}
-         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-point2')}>
-            <h3 className="font-bold text-gray-800 mb-3">Point 02</h3>
+         <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onClick={() => scrollTo('preview-point2')}>
+            <h3 className="font-bold text-slate-300 mb-3">Point 02</h3>
             {data.point2Image1 || data.aiPoint2Desc ? (
                <>
                  <div className="flex justify-between items-center mb-2">
-                     <span className="text-xs font-bold text-gray-500">Main</span>
+                     <span className="text-xs font-bold text-slate-400">Main</span>
                      <button onClick={() => { removeSlot('point2Image1'); removeSlot('aiPoint2Desc'); }} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">🗑 섹션 삭제</button>
                  </div>
                  <div className="mb-3">
                     <input 
                         type="text" 
-                        className="w-full p-2 border border-gray-200 rounded text-sm placeholder-gray-400 bg-white"
+                        className="w-full p-2 border border-white/10 bg-[#0F172A]/50 text-slate-200 rounded text-sm placeholder-slate-500 outline-none focus:ring-1 focus:ring-[#22C55E]"
                         placeholder="섹션 타이틀 (기본값: POINT 02)"
                         value={data.point2Title || ''} 
                         onChange={(e) => onChange(prev => ({ ...prev, point2Title: e.target.value }))}
@@ -508,13 +508,13 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                  {renderSubPoint(3, 'point2', 'preview-point2')}
                </>
             ) : (
-               <button onClick={() => { enableSlot('point2Image1'); enableSlot('aiPoint2Desc'); }} className="w-full py-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-all">+ Point 02 섹션 추가하기</button>
+                <button onClick={() => { enableSlot('point2Image1'); enableSlot('aiPoint2Desc'); }} className="w-full py-6 border-2 border-dashed border-white/10 rounded-lg text-slate-500 font-bold hover:border-rose-400/50 hover:text-rose-400 hover:bg-rose-900/10 transition-all duration-200 ease-out shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]">+ Point 02 섹션 추가하기</button>
             )}
          </div>
 
          {/* Size & Thumb */}
-         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100" onClick={() => scrollTo('preview-size')}>
-            <h2 className="text-md font-bold text-gray-900 mb-3">📏 사이즈 및 썸네일</h2>
+         <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onClick={() => scrollTo('preview-size')}>
+            <h2 className="text-md font-bold text-white mb-3">📏 사이즈 및 썸네일</h2>
             <div className="grid grid-cols-2 gap-4">
                 <ImageUploader label="Size Detail" value={data.sizeImage} targetId="preview-size" onChange={handleImageChange('sizeImage')} onDelete={() => removeSlot('sizeImage')} onApplyWatermark={() => applyWatermark('sizeImage')} isWatermarkOn={data.watermarkSettings?.['sizeImage']?.show} />
                 <ImageUploader label="Thumbnail" value={data.thumbnailImage} targetId="preview-size" onChange={handleImageChange('thumbnailImage')} onDelete={() => removeSlot('thumbnailImage')} onApplyWatermark={() => applyWatermark('thumbnailImage')} isWatermarkOn={data.watermarkSettings?.['thumbnailImage']?.show} />
@@ -523,8 +523,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
       </section>
 
       {/* AI Button */}
-      <div className="sticky bottom-0 z-50 bg-white border-t border-gray-200 p-4 -mx-6 shadow-2xl">
-        <button onClick={onGenerateAI} disabled={isLoading} className={`w-full py-4 rounded-xl font-black text-lg shadow-lg transform transition-all flex items-center justify-center gap-2 ${isLoading ? 'bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-rose-600 text-white hover:bg-rose-700 hover:scale-[1.01]'}`}>
+      <div className="sticky bottom-0 z-50 bg-[#020617]/90 border-t border-white/10 p-4 -mx-6 shadow-2xl backdrop-blur-md">
+        <button onClick={onGenerateAI} disabled={isLoading} className={`w-full py-4 rounded-xl font-black text-lg shadow-[var(--shadow-lg)] transform transition-all duration-200 ease-out flex items-center justify-center gap-2 ${isLoading ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-[#22C55E] text-black hover:bg-[#16A34A] hover:scale-[1.01] hover:shadow-[var(--shadow-xl)]'}`}>
           {isLoading ? <>AI가 문구 작성중...</> : <>✨ AI 문구 자동 생성하기</>}
         </button>
       </div>

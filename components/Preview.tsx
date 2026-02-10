@@ -94,7 +94,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
       <React.Fragment key={keyPrefix}>
         {/* 이미지 */}
         {imgUrl && (
-          <div className="w-full bg-gray-50 mb-12 overflow-hidden shadow-sm rounded-lg relative">
+          <div className="w-full bg-gray-50/50 mb-12 overflow-hidden shadow-[var(--shadow-xl)] rounded-2xl relative transition-all duration-200 ease-out hover:shadow-[var(--shadow-2xl)] border border-white/40 backdrop-blur-sm">
             <img src={imgUrl} className="w-full h-auto block" alt={`${keyPrefix} Image`} />
             {dataKey && <RenderWatermark targetKey={dataKey} />}
           </div>
@@ -201,7 +201,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
       <div 
         ref={ref}
         id="detail-page-container"
-        className="bg-white overflow-hidden shadow-2xl" 
+        className="bg-white overflow-hidden shadow-[var(--shadow-xl)] transition-all duration-200 ease-out" 
         style={{ width: '800px', minHeight: '1200px' }}
       >
         {/* 1. Header 영역 */}
@@ -220,11 +220,11 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             {productNameEn || "PRODUCT ENGLISH NAME"}
           </p>
           
-          <div id="preview-main" className="w-full bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 rounded-lg shadow-inner relative">
+          <div id="preview-main" className="w-full bg-gray-50/50 flex items-center justify-center overflow-hidden border border-white/40 rounded-2xl shadow-[var(--shadow-xl)] relative transition-all duration-200 ease-out backdrop-blur-md">
             {mainImage ? (
               <img src={mainImage} className="w-full h-auto block" alt="Main" />
             ) : (
-              <div className="w-full aspect-[4/5] flex items-center justify-center bg-gray-100">
+              <div className="w-full aspect-[4/5] flex items-center justify-center bg-gray-100/50 backdrop-blur-sm">
                 <span className="text-gray-300 font-bold text-4xl">MAIN IMAGE</span>
               </div>
             )}
@@ -233,8 +233,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
         </header>
 
         {/* 2. 스펙 테이블 & 패키지 */}
-        <section id="preview-spec" className="px-10 py-20 bg-gray-50">
-          <div className="rounded-2xl overflow-hidden shadow-sm bg-white border border-gray-100">
+        <section id="preview-spec" className="px-10 py-20 bg-gray-50/50">
+          <div className="rounded-2xl overflow-hidden shadow-[var(--shadow-xl)] bg-white/80 backdrop-blur-md border border-white/40 transition-all duration-200 ease-out">
             <div 
               className="py-5 px-6 text-white font-bold text-center text-2xl tracking-wider"
               style={{ background: isGradient(themeColor) ? themeColor : `linear-gradient(90deg, ${themeColor} 0%, ${themeColor}DD 100%)` }}
@@ -251,7 +251,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                 { label: '전원', value: summaryInfo.power },
                 { label: '제조사', value: summaryInfo.maker },
               ].map((item, idx) => (
-                <div key={idx} className="grid grid-cols-[120px_1fr] gap-4 py-4 border-b border-gray-100 last:border-b-0 items-center">
+                <div key={idx} className="grid grid-cols-[120px_1fr] gap-4 py-4 border-b border-gray-200/50 last:border-b-0 items-center">
                   <div className="text-xl font-bold text-gray-500">{item.label}</div>
                   <div className="text-xl font-bold text-gray-800 leading-relaxed whitespace-pre-line">
                     {item.value || '-'}
@@ -269,7 +269,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
 
     {/* 4. 핵심 3줄 요약 (가장 임팩트 있는 구간) */}
         {/* ✅ 수정됨: py-0 -> pt-0 pb-40 (위는 붙이고, 아래는 넉넉하게 벌림) */}
-        <section className="pt-0 pb-10 px-10 flex flex-col items-center text-center bg-white">
+        <section className="pt-0 pb-10 px-10 flex flex-col items-center text-center bg-white/80 backdrop-blur-sm">
           <div className="space-y-0 max-w-3xl">
             {formatSummaryLines(data.aiSummary).map((line, i) => (
               <p 
@@ -295,7 +295,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
 
         {/* [추가] 동영상 삽입 이미지 (800x450) */}
         {data.videoInsertImage && (
-          <section id="video-insert-section" className="pb-10 px-0 flex flex-col items-center bg-white relative">
+          <section id="video-insert-section" className="pb-10 px-0 flex flex-col items-center bg-white/80 backdrop-blur-sm relative">
             <img 
               src={data.videoInsertImage} 
               className="w-full h-auto aspect-[16/9] object-cover block" 
@@ -306,7 +306,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
 
         {/* 4-2. 패키지 디자인 (위치 이동됨) */}
         {(data.isPackageImageEnabled ?? true) && (
-        <section id="preview-package" className="pb-16 px-10 flex flex-col items-center bg-white relative"
+        <section id="preview-package" className="pb-16 px-10 flex flex-col items-center bg-white/80 backdrop-blur-sm relative"
              style={{ 
                 // 패키지 이미지 위치에 따라 섹션 높이 자동 조절
                 minHeight: (data.packageLayout?.y || 0) + (data.packageLayout?.height || 550) + 150 
@@ -334,8 +334,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                    }}
                    className="group z-10" // z-index 확보
                 >
-                    <div className="w-full h-full flex flex-col p-2 border-2 border-transparent group-hover:border-blue-300 group-hover:bg-blue-50/10 rounded-xl transition-all select-none">
-                        <div className="w-full flex-1 bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center relative pointer-events-none mb-4">
+                    <div className="w-full h-full flex flex-col p-2 border-2 border-transparent group-hover:border-[#CA8A04] group-hover:bg-[#CA8A04]/5 rounded-xl transition-all select-none">
+                        <div className="w-full flex-1 bg-white/80 shadow-[var(--shadow-xl)] rounded-xl overflow-hidden border border-white/40 flex items-center justify-center relative pointer-events-none mb-4 transition-all duration-200 ease-out backdrop-blur-md">
                             {packageImage ? (
                             <img 
                                 src={packageImage} 
@@ -343,7 +343,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                                 alt="Package" 
                             />
                             ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                            <div className="w-full h-full flex items-center justify-center bg-gray-100/50">
                                 <span className="text-gray-300 font-bold">PACKAGE IMAGE</span>
                             </div>
                             )}
@@ -375,7 +375,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
 
         {/* 3. 옵션 (Draggable) */}
         {options.length > 0 && (
-          <section id="preview-option" className="px-10 pb-10 pt-10 bg-white border-b border-gray-100 relative"
+          <section id="preview-option" className="px-10 pb-10 pt-10 bg-white/80 backdrop-blur-md border-b border-white/40 relative"
              style={{ 
                 // 가장 아래에 있는 요소의 y + height + 여유공간(100px)을 섹션 높이로 설정
                 minHeight: options.length > 0 
@@ -415,7 +415,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                  >
                     {/* 드래그 핸들 및 콘텐츠 */}
                     <div className="w-full h-full flex flex-col p-2 border-2 border-transparent group-hover:border-blue-300 group-hover:bg-blue-50/10 rounded-xl transition-all select-none">
-                        <div className="w-full flex-1 bg-white rounded-3xl overflow-hidden mb-3 border-2 border-gray-100 flex items-center justify-center relative shadow-sm pointer-events-none">
+                        <div className="w-full flex-1 bg-white rounded-3xl overflow-hidden mb-3 border-2 border-gray-100 flex items-center justify-center relative shadow-[var(--shadow-md)] transition-all duration-200 ease-out pointer-events-none hover:shadow-[var(--shadow-lg)]">
                            {opt.image ? (
                              <img src={opt.image} className="w-full h-full object-contain p-4" alt={opt.name} />
                            ) : (
@@ -439,7 +439,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
           {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-12">
              <span className="text-sm font-bold tracking-[0.5em] text-gray-300 uppercase mb-2">Key Feature</span>
-            <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-lg"
+            <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-[var(--shadow-lg)] transition-all duration-200 ease-out"
               style={{ background: themeColor }}
             >
               {data.productNameKr || "상품명"}
@@ -449,7 +449,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
           </div>
 
           <div className="px-10">
-            <div className="w-full bg-gray-100 mb-12 overflow-hidden rounded-2xl shadow-sm relative">
+            <div className="w-full bg-gray-100/50 mb-12 overflow-hidden rounded-2xl shadow-[var(--shadow-xl)] relative transition-all duration-200 ease-out hover:shadow-[var(--shadow-2xl)] border border-white/40 backdrop-blur-sm">
                {data.featureImage ? (
                 <img src={data.featureImage} className="w-full h-auto block" alt="Feature" />
               ) : (
@@ -473,7 +473,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
         <section id="preview-point1" className="pb-32">
           {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-16">
-            <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-lg"
+            <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-[var(--shadow-lg)] transition-all duration-200 ease-out"
               style={{ background: data.themeColor }}
             >
               {data.productNameKr || "상품명"}
@@ -514,7 +514,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
         <section id="preview-point2" className="pb-32">
            {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-16">
-            <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-lg"
+            <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-[var(--shadow-lg)] transition-all duration-200 ease-out"
               style={{ background: data.themeColor }}
             >
               {data.productNameKr || "상품명"}
@@ -553,7 +553,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
         {(data.sizeImage || data.summaryInfo.weight) && (
         <section id="preview-size" className="pb-32 bg-gray-50 pt-20">
           <div className="w-full flex flex-col items-center justify-center mb-12">
-            <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-lg"
+            <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-[var(--shadow-lg)] transition-all duration-200 ease-out"
               style={{ background: data.themeColor }}
             >
               {data.productNameKr || "상품명"}
@@ -566,7 +566,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             {/* 무게 뱃지 */}
             {data.summaryInfo.weight && (
             <div 
-                className="inline-flex items-center justify-center px-12 py-6 bg-white rounded-full shadow-lg mb-16" 
+                className="inline-flex items-center justify-center px-12 py-6 bg-white rounded-full shadow-[var(--shadow-lg)] mb-16 transition-all duration-200 ease-out hover:shadow-[var(--shadow-xl)]" 
                 style={isGradient(themeColor) ? {
                     background: `linear-gradient(#fff, #fff) padding-box, ${themeColor} border-box`,
                     border: '2px solid transparent'
@@ -579,7 +579,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             </div>
             )}
             
-            <div className="w-full bg-white rounded-3xl overflow-hidden p-8 mb-8 shadow-sm border border-gray-100">
+            <div className="w-full bg-white/80 rounded-3xl overflow-hidden p-8 mb-8 shadow-[var(--shadow-xl)] border border-white/40 transition-all duration-200 ease-out hover:shadow-[var(--shadow-2xl)] backdrop-blur-md">
                {sizeImage ? (
                 <img src={sizeImage} className="w-full h-auto block" alt="Size Detail" />
               ) : (

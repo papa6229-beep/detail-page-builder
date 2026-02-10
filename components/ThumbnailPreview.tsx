@@ -33,7 +33,7 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
     <div 
       ref={ref}
       style={{ width: `${width}px`, height: `${height}px` }}
-      className="bg-white relative overflow-hidden flex items-center justify-center shrink-0 border border-gray-200 shadow-sm"
+      className="bg-white relative overflow-hidden flex items-center justify-center shrink-0 border border-gray-200 shadow-[var(--shadow-sm)] transition-all duration-200 ease-out hover:shadow-[var(--shadow-md)]"
     >
       {/* 1. 이미지 영역 (Background Layer) */}
       <div className="absolute inset-0 flex items-center justify-center bg-white z-0">
