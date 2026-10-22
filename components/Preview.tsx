@@ -2,7 +2,14 @@
 
 import React, { forwardRef } from 'react';
 import { Rnd } from 'react-rnd';
-import { ProductData } from '../types';
+import { ProductData, SectionSpacingKey } from '../types';
+import { getSectionSpacing, SECTION_SPACING } from '../sectionSpacing';
+import SectionSpacingControl from './SectionSpacingControl';
+import FramedProductImage from './FramedProductImage';
+import RenderWatermark from './PreviewWatermark';
+import type { ProductFraming } from '../productFraming';
+import EditablePreviewImage, { PreviewImageEditingContext } from './EditablePreviewImage';
+import { hasImageTransform, isGifImage } from '../previewImageTransforms';
 
 // ✅ 그라데이션 여부 체크 헬퍼
 const isGradient = (color: string) => color.toLowerCase().includes('gradient');
@@ -55,13 +62,21 @@ const formatSummaryLines = (text: string): string[] => {
 };
 
 interface PreviewProps {
+  onProductFramingChange?: (frame: ProductFraming) => void;
   data: ProductData;
   onOptionLayoutChange: (id: string, layout: { x: number, y: number, width: number, height: number }) => void;
   onPackageLayoutChange: (layout: { x: number, y: number, width: number, height: number }) => void;
   onWatermarkLayoutChange: (id: string, layout: { x: number, y: number, width: number, height: number }) => void;
+  onSectionSpacingChange: (key: SectionSpacingKey, value: number) => void;
 }
 
-const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayoutChange, onPackageLayoutChange, onWatermarkLayoutChange }, ref) => {
+const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayoutChange, onPackageLayoutChange, onWatermarkLayoutChange, onSectionSpacingChange, onProductFramingChange }, ref) => {
+  const editing = React.useContext(PreviewImageEditingContext);
+  const imageOverflow = (key: string): React.CSSProperties | undefined => hasImageTransform(data.previewImageTransforms?.[key]) ? { overflow: 'visible', zIndex: 1 } : undefined;
+  const spacingStyle = (key: SectionSpacingKey) => ({ paddingBottom: getSectionSpacing(data, key) });
+  const sectionEnd = (key: SectionSpacingKey) => (
+    <SectionSpacingControl sectionKey={key} value={getSectionSpacing(data, key)} onChange={onSectionSpacingChange} />
+  );
   const {
     productNameKr,
     productNameEn,
@@ -94,9 +109,9 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
       <React.Fragment key={keyPrefix}>
         {/* 이미지 */}
         {imgUrl && (
-          <div className="w-full bg-gray-50/50 mb-12 overflow-hidden shadow-[var(--shadow-xl)] rounded-2xl relative transition-all duration-200 ease-out hover:shadow-[var(--shadow-2xl)] border border-white/40 backdrop-blur-sm">
-            <img src={imgUrl} className="w-full h-auto block" alt={`${keyPrefix} Image`} />
-            {dataKey && <RenderWatermark targetKey={dataKey} />}
+          <div style={imageOverflow(dataKey || keyPrefix)} className="w-full bg-gray-50/50 mb-12 overflow-hidden shadow-[var(--shadow-xl)] rounded-2xl relative transition-all duration-200 ease-out hover:shadow-[var(--shadow-2xl)] border border-white/40 backdrop-blur-sm">
+            <EditablePreviewImage editKey={dataKey || keyPrefix} label={`포인트 ${keyPrefix.replace(/^p/, '')}`} src={imgUrl} className="w-full h-auto block" alt={`${keyPrefix} Image`} />
+            {dataKey && <RenderWatermark data={data} onWatermarkLayoutChange={onWatermarkLayoutChange} targetKey={dataKey} />}
           </div>
         )}
 
@@ -135,77 +150,18 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
     (data as any).point2Image3 || 
     (data as any).aiPoint2Desc3;
 
-  // ✅ 워터마크 렌더러
-  const RenderWatermark = ({ targetKey, containerWidth, containerHeight, isFixed = false }: { targetKey: string, containerWidth?: number, containerHeight?: number, isFixed?: boolean }) => {
-    const settings = data.watermarkSettings?.[targetKey];
-    if (!data.watermarkImage || !settings?.show) return null;
-
-    if (isFixed) {
-        return (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
-                 <img 
-                    src={data.watermarkImage} 
-                    className="object-contain" // 크기는 일단 원본 비율 유지하거나 적절히 제한
-                    style={{ width: settings?.width ? `${settings.width}px` : '150px', height: settings?.height ? `${settings.height}px` : 'auto', opacity: 0.9 }}
-                    alt="watermark" 
-                 />
-            </div>
-        );
-    }
-
-    // 초기 위치/크기 설정 (중앙 정렬)
-    const defaultWidth = 100;
-    const defaultHeight = 100; // 비율에 따라 자동 조절됨
-    const x = settings.x || (containerWidth ? (containerWidth - defaultWidth) / 2 : 0);
-    const y = settings.y || (containerHeight ? (containerHeight - defaultHeight) / 2 : 0);
-
-    return (
-        <Rnd
-            size={{ width: settings.width || defaultWidth, height: settings.height || defaultHeight }}
-            position={{ x: x, y: y }}
-            onDragStop={(e, d) => {
-                onWatermarkLayoutChange(targetKey, { 
-                    x: d.x, 
-                    y: d.y, 
-                    width: settings.width || defaultWidth, 
-                    height: settings.height || defaultHeight 
-                });
-            }}
-            onResizeStop={(e, direction, ref, delta, position) => {
-                onWatermarkLayoutChange(targetKey, {
-                    width: parseInt(ref.style.width),
-                    height: parseInt(ref.style.height),
-                    ...position
-                });
-            }}
-            bounds="parent"
-            className="z-50 group" // 최상위 레이어
-        >
-            <div className="w-full h-full relative cursor-move">
-                 <img 
-                    src={data.watermarkImage} 
-                    className="w-full h-full object-contain pointer-events-none select-none" 
-                    alt="watermark" 
-                 />
-                 {/* 호버 시 테두리 표시 */}
-                 <div className="absolute inset-0 border-2 border-transparent group-hover:border-purple-400 rounded transition-colors"></div>
-                 {/* 리사이즈 핸들 */}
-                 <div className="absolute bottom-[-4px] right-[-4px] w-3 h-3 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 cursor-nwse-resize"></div>
-            </div>
-        </Rnd>
-    );
-  };
 
   return (
     <div className="flex flex-col items-center bg-gray-100 p-0 overflow-y-auto h-full">
       <div 
         ref={ref}
         id="detail-page-container"
+        data-image-canvas="detail"
         className="bg-white overflow-hidden shadow-[var(--shadow-xl)] transition-all duration-200 ease-out" 
-        style={{ width: '800px', minHeight: '1200px' }}
+        style={{ width: '800px', minHeight: '1200px', position: 'relative' }}
       >
         {/* 1. Header 영역 */}
-        <header id="preview-top" className="pt-24 pb-16 px-10 text-center flex flex-col items-center">
+        <header id="preview-top" className="pt-24 pb-16 px-10 text-center flex flex-col items-center" style={spacingStyle('main')}>
           <h1 className="text-5xl font-black mb-6 tracking-tight leading-tight break-keep" 
             style={isGradient(themeColor) ? {
                 backgroundImage: themeColor,
@@ -220,20 +176,21 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             {productNameEn || "PRODUCT ENGLISH NAME"}
           </p>
           
-          <div id="preview-main" className="w-full bg-gray-50/50 flex items-center justify-center overflow-hidden border border-white/40 rounded-2xl shadow-[var(--shadow-xl)] relative transition-all duration-200 ease-out backdrop-blur-md">
+          <div id="preview-main" style={{ ...(data.productFraming?.main ? { aspectRatio: data.productFraming.main.ratio } : {}), ...imageOverflow('mainImage') }} className="w-full bg-gray-50/50 flex items-center justify-center overflow-hidden border border-white/40 rounded-2xl shadow-[var(--shadow-xl)] relative transition-all duration-200 ease-out backdrop-blur-md">
             {mainImage ? (
-              <img src={mainImage} className="w-full h-auto block" alt="Main" />
+              data.productFraming?.main ? <FramedProductImage src={mainImage} alt="Main" frame={data.productFraming.main} target="main" label="메인" onChange={onProductFramingChange}/> : <EditablePreviewImage editKey="mainImage" label="메인 이미지" src={mainImage} className="w-full h-auto block" alt="Main" />
             ) : (
               <div className="w-full aspect-[4/5] flex items-center justify-center bg-gray-100/50 backdrop-blur-sm">
                 <span className="text-gray-300 font-bold text-4xl">MAIN IMAGE</span>
               </div>
             )}
-            <RenderWatermark targetKey="mainImage" />
+            <RenderWatermark data={data} onWatermarkLayoutChange={onWatermarkLayoutChange} targetKey="mainImage" />
           </div>
         </header>
+        {sectionEnd('main')}
 
         {/* 2. 스펙 테이블 & 패키지 */}
-        <section id="preview-spec" className="px-10 py-20 bg-gray-50/50">
+        <section id="preview-spec" className="px-10 py-20 bg-gray-50/50" style={spacingStyle('spec')}>
           <div className="rounded-2xl overflow-hidden shadow-[var(--shadow-xl)] bg-white/80 backdrop-blur-md border border-white/40 transition-all duration-200 ease-out">
             <div 
               className="py-5 px-6 text-white font-bold text-center text-2xl tracking-wider"
@@ -263,13 +220,14 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
 
 
         </section>
+        {sectionEnd('spec')}
 
         {/* 3. 옵션 (있을 때만) */}
 
 
     {/* 4. 핵심 3줄 요약 (가장 임팩트 있는 구간) */}
         {/* ✅ 수정됨: py-0 -> pt-0 pb-40 (위는 붙이고, 아래는 넉넉하게 벌림) */}
-        <section className="pt-0 pb-10 px-10 flex flex-col items-center text-center bg-white/80 backdrop-blur-sm">
+        <section id="preview-summary" className="pt-0 pb-10 px-10 flex flex-col items-center text-center bg-white/80 backdrop-blur-sm" style={spacingStyle('summary')}>
           <div className="space-y-0 max-w-3xl">
             {formatSummaryLines(data.aiSummary).map((line, i) => (
               <p 
@@ -292,29 +250,36 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             ))}
           </div>
         </section>
+        {sectionEnd('summary')}
 
         {/* [추가] 동영상 삽입 이미지 (800x450) */}
         {data.videoInsertImage && (
-          <section id="video-insert-section" className="pb-10 px-0 flex flex-col items-center bg-white/80 backdrop-blur-sm relative">
-            <img 
+          <React.Fragment>
+          <section id="video-insert-section" className="pb-10 px-0 flex flex-col items-center bg-white/80 backdrop-blur-sm relative" style={spacingStyle('video')}>
+            {isGifImage(data.videoInsertImage) ? <img
               src={data.videoInsertImage} 
               className="w-full h-auto aspect-[16/9] object-cover block" 
               alt="Video Insert" 
-            />
+            /> : <EditablePreviewImage editKey="videoInsertImage" label="삽입 이미지" src={data.videoInsertImage} className="w-full h-auto aspect-[16/9] object-cover block" alt="Video Insert"/>}
           </section>
+          {sectionEnd('video')}
+          </React.Fragment>
         )}
 
         {/* 4-2. 패키지 디자인 (위치 이동됨) */}
         {(data.isPackageImageEnabled ?? true) && (
+        <React.Fragment>
         <section id="preview-package" className="pb-16 px-10 flex flex-col items-center bg-white/80 backdrop-blur-sm relative"
              style={{ 
+                ...spacingStyle('package'),
                 // 패키지 이미지 위치에 따라 섹션 높이 자동 조절
-                minHeight: (data.packageLayout?.y || 0) + (data.packageLayout?.height || 550) + 150 
+                minHeight: (data.packageLayout?.y || 0) + (data.packageLayout?.height || 550) + 150 + getSectionSpacing(data, 'package') - SECTION_SPACING.package.defaultValue
              }}
         >
              {/* Rnd 적용 */}
              <div className="absolute inset-0 flex justify-center">
                 <Rnd
+                   disableDragging={Boolean(editing)} enableResizing={editing ? false : undefined}
                    size={{ width: data.packageLayout?.width || 400, height: data.packageLayout?.height || 550 }}
                    position={{ x: data.packageLayout?.x || 0, y: data.packageLayout?.y || 0 }}
                    onDragStop={(e, d) => {
@@ -335,9 +300,9 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                    className="group z-10" // z-index 확보
                 >
                     <div className="w-full h-full flex flex-col p-2 border-2 border-transparent group-hover:border-[#CA8A04] group-hover:bg-[#CA8A04]/5 rounded-xl transition-all select-none">
-                        <div className="w-full flex-1 bg-white/80 shadow-[var(--shadow-xl)] rounded-xl overflow-hidden border border-white/40 flex items-center justify-center relative pointer-events-none mb-4 transition-all duration-200 ease-out backdrop-blur-md">
+                        <div style={imageOverflow('packageImage')} className="w-full flex-1 bg-white/80 shadow-[var(--shadow-xl)] rounded-xl overflow-hidden border border-white/40 flex items-center justify-center relative pointer-events-none mb-4 transition-all duration-200 ease-out backdrop-blur-md">
                             {packageImage ? (
-                            <img 
+                            <EditablePreviewImage editKey="packageImage" label="패키지 이미지"
                                 src={packageImage} 
                                 className="block w-full h-full object-contain" 
                                 alt="Package" 
@@ -347,7 +312,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                                 <span className="text-gray-300 font-bold">PACKAGE IMAGE</span>
                             </div>
                             )}
-                            <RenderWatermark targetKey="packageImage" isFixed={true} />
+                            <RenderWatermark data={data} onWatermarkLayoutChange={onWatermarkLayoutChange} targetKey="packageImage" isFixed={true} />
                         </div>
 
                         {/* Package Design Text */}
@@ -366,20 +331,24 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                         </div>
                         
                         {/* 크기 조절 핸들 시각적 힌트 */}
-                        <div className="absolute bottom-1 right-1 w-4 h-4 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 cursor-nwse-resize"></div>
+                        {!editing && <div className="absolute bottom-1 right-1 w-4 h-4 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 cursor-nwse-resize"></div>}
                     </div>
                 </Rnd>
              </div>
         </section>
+        {sectionEnd('package')}
+        </React.Fragment>
         )}
 
         {/* 3. 옵션 (Draggable) */}
         {options.length > 0 && (
+          <React.Fragment>
           <section id="preview-option" className="px-10 pb-10 pt-10 bg-white/80 backdrop-blur-md border-b border-white/40 relative"
              style={{ 
+                ...spacingStyle('options'),
                 // 가장 아래에 있는 요소의 y + height + 여유공간(100px)을 섹션 높이로 설정
                 minHeight: options.length > 0 
-                    ? Math.max(...options.map(o => (o.y || 0) + (o.height || 400))) + 150 
+                    ? Math.max(...options.map(o => (o.y || 0) + (o.height || 400))) + 150 + getSectionSpacing(data, 'options') - SECTION_SPACING.options.defaultValue
                     : 400 
              }}
           >
@@ -394,6 +363,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                {options.map((opt) => (
                  <Rnd
                    key={opt.id}
+                   disableDragging={Boolean(editing)} enableResizing={editing ? false : undefined}
                    size={{ width: opt.width || 320, height: opt.height || 400 }}
                    position={{ x: opt.x || 0, y: opt.y || 0 }}
                    onDragStop={(e, d) => {
@@ -415,9 +385,9 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                  >
                     {/* 드래그 핸들 및 콘텐츠 */}
                     <div className="w-full h-full flex flex-col p-2 border-2 border-transparent group-hover:border-blue-300 group-hover:bg-blue-50/10 rounded-xl transition-all select-none">
-                        <div className="w-full flex-1 bg-white rounded-3xl overflow-hidden mb-3 border-2 border-gray-100 flex items-center justify-center relative shadow-[var(--shadow-md)] transition-all duration-200 ease-out pointer-events-none hover:shadow-[var(--shadow-lg)]">
+                        <div style={imageOverflow(`option:${opt.id}`)} className="w-full flex-1 bg-white rounded-3xl overflow-hidden mb-3 border-2 border-gray-100 flex items-center justify-center relative shadow-[var(--shadow-md)] transition-all duration-200 ease-out pointer-events-none hover:shadow-[var(--shadow-lg)]">
                            {opt.image ? (
-                             <img src={opt.image} className="w-full h-full object-contain p-4" alt={opt.name} />
+                             <EditablePreviewImage editKey={`option:${opt.id}`} label={`옵션 ${opt.name || options.indexOf(opt) + 1} 이미지`} src={opt.image} className="w-full h-full object-contain p-4" alt={opt.name} />
                            ) : (
                              <span className="text-gray-300 font-bold text-sm">NO IMAGE</span>
                            )}
@@ -425,17 +395,20 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                         <span className="font-bold text-lg text-gray-800 text-center block w-full pointer-events-none overflow-hidden text-ellipsis whitespace-nowrap">{opt.name}</span>
                         
                         {/* 크기 조절 핸들 시각적 힌트 (우측 하단) */}
-                        <div className="absolute bottom-1 right-1 w-4 h-4 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 cursor-nwse-resize"></div>
+                        {!editing && <div className="absolute bottom-1 right-1 w-4 h-4 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 cursor-nwse-resize"></div>}
                     </div>
                  </Rnd>
                ))}
              </div>
           </section>
+          {sectionEnd('options')}
+          </React.Fragment>
         )}
 
         {/* 5. 메인 특징 (Feature) - 조건부 렌더링 */}
         {(data.featureImage || data.aiFeatureDesc) && (
-        <section id="preview-feature" className="pb-32">
+        <React.Fragment>
+        <section id="preview-feature" className="pb-32" style={spacingStyle('feature')}>
           {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-12">
              <span className="text-sm font-bold tracking-[0.5em] text-gray-300 uppercase mb-2">Key Feature</span>
@@ -449,13 +422,13 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
           </div>
 
           <div className="px-10">
-            <div className="w-full bg-gray-100/50 mb-12 overflow-hidden rounded-2xl shadow-[var(--shadow-xl)] relative transition-all duration-200 ease-out hover:shadow-[var(--shadow-2xl)] border border-white/40 backdrop-blur-sm">
+            <div style={imageOverflow('featureImage')} className="w-full bg-gray-100/50 mb-12 overflow-hidden rounded-2xl shadow-[var(--shadow-xl)] relative transition-all duration-200 ease-out hover:shadow-[var(--shadow-2xl)] border border-white/40 backdrop-blur-sm">
                {data.featureImage ? (
-                <img src={data.featureImage} className="w-full h-auto block" alt="Feature" />
+                <EditablePreviewImage editKey="featureImage" label="특징 이미지" src={data.featureImage} className="w-full h-auto block" alt="Feature" />
               ) : (
                 <div className="w-full aspect-video flex items-center justify-center text-gray-300 font-bold text-3xl">FEATURE IMAGE</div>
               )}
-               <RenderWatermark targetKey="featureImage" />
+               <RenderWatermark data={data} onWatermarkLayoutChange={onWatermarkLayoutChange} targetKey="featureImage" />
             </div>
             {data.aiFeatureDesc && (
             <div className="max-w-3xl mx-auto text-center px-4">
@@ -466,11 +439,14 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             )}
           </div>
         </section>
+        {sectionEnd('feature')}
+        </React.Fragment>
         )}
 
         {/* 6. POINT 1 (필수 -> 조건부 변경) */}
         {(data.point1Image1 || data.aiPoint1Desc || (data as any).point1Image2 || (data as any).point1Image3) && (
-        <section id="preview-point1" className="pb-32">
+        <React.Fragment>
+        <section id="preview-point1" className="pb-32" style={spacingStyle('point1')}>
           {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-16">
             <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-[var(--shadow-lg)] transition-all duration-200 ease-out"
@@ -506,12 +482,15 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             )}
           </div>
         </section>
+        {sectionEnd('point1')}
+        </React.Fragment>
         )}
 
 
         {/* 7. POINT 2 (조건부 렌더링) */}
         {isPoint2Active && (
-        <section id="preview-point2" className="pb-32">
+        <React.Fragment>
+        <section id="preview-point2" className="pb-32" style={spacingStyle('point2')}>
            {/* 섹션 헤더 */}
           <div className="w-full flex flex-col items-center justify-center mb-16">
             <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-[var(--shadow-lg)] transition-all duration-200 ease-out"
@@ -547,11 +526,14 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             )}
           </div>
         </section>
+        {sectionEnd('point2')}
+        </React.Fragment>
         )}
 
         {/* 8. 사이즈 & 인포 - 조건부 렌더링 */}
         {(data.sizeImage || data.summaryInfo.weight) && (
-        <section id="preview-size" className="pb-32 bg-gray-50 pt-20">
+        <React.Fragment>
+        <section id="preview-size" className="pb-32 bg-gray-50 pt-20" style={spacingStyle('size')}>
           <div className="w-full flex flex-col items-center justify-center mb-12">
             <div className="px-12 py-3 mb-4 text-white font-bold tracking-widest text-lg rounded-full shadow-[var(--shadow-lg)] transition-all duration-200 ease-out"
               style={{ background: data.themeColor }}
@@ -579,13 +561,13 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             </div>
             )}
             
-            <div className="w-full bg-white/80 rounded-3xl overflow-hidden p-8 mb-8 shadow-[var(--shadow-xl)] border border-white/40 transition-all duration-200 ease-out hover:shadow-[var(--shadow-2xl)] backdrop-blur-md">
+            <div style={imageOverflow('sizeImage')} className="w-full bg-white/80 rounded-3xl overflow-hidden p-8 mb-8 shadow-[var(--shadow-xl)] border border-white/40 transition-all duration-200 ease-out hover:shadow-[var(--shadow-2xl)] backdrop-blur-md">
                {sizeImage ? (
-                <img src={sizeImage} className="w-full h-auto block" alt="Size Detail" />
+                <EditablePreviewImage editKey="sizeImage" label="사이즈 이미지" src={sizeImage} className="w-full h-auto block" alt="Size Detail" />
               ) : (
                 <div className="w-full py-32 flex items-center justify-center text-gray-200 font-bold text-3xl">SIZE DETAIL</div>
               )}
-               <RenderWatermark targetKey="sizeImage" />
+               <RenderWatermark data={data} onWatermarkLayoutChange={onWatermarkLayoutChange} targetKey="sizeImage" />
             </div>
 
             <p className="text-lg text-gray-500 font-bold">
@@ -593,6 +575,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
             </p>
           </div>
         </section>
+        {sectionEnd('size')}
+        </React.Fragment>
         )}
         
         {/* 9. Footer */}

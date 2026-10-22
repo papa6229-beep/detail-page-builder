@@ -1,6 +1,9 @@
 import React from 'react';
 import { ProductData, OptionItem } from '../types';
 import { COLOR_PRESETS } from '../constants';
+import ImageDropZone from './ImageDropZone';
+import { canProcessImage } from '../imageProcessing';
+import { framingSource, type FramingTarget } from '../productFraming';
 
 // =============================================================================
 // ✅ 컴포넌트들을 Editor 함수 밖으로 꺼냈습니다 (입력 끊김 해결의 핵심!)
@@ -8,9 +11,9 @@ import { COLOR_PRESETS } from '../constants';
 
 // 1. 공통 이미지 업로더
 const ImageUploader = React.memo(({ 
-  label, value, subLabel, isSmall = false, targetId, onDelete, onChange, onApplyWatermark, isWatermarkOn 
+  label, value, subLabel, isSmall = false, targetId, onDelete, onChange, onApplyWatermark, isWatermarkOn, onEditImage, framingControls
 }: { 
-  label: string, value: string | null, subLabel?: string, isSmall?: boolean, targetId?: string, onDelete?: () => void, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, onApplyWatermark?: () => void, isWatermarkOn?: boolean 
+  label: string, value: string | null, subLabel?: string, isSmall?: boolean, targetId?: string, onDelete?: () => void, onChange: (dataUrl: string) => void, onApplyWatermark?: () => void, isWatermarkOn?: boolean, onEditImage?: () => void, framingControls?: React.ReactNode
 }) => {
   const hasImage = value && value !== '__ENABLED__';
   
@@ -22,7 +25,7 @@ const ImageUploader = React.memo(({
   };
 
   return (
-    <div className="mb-4" onClick={scrollToPreview}>
+    <ImageDropZone label={label} className="builder-upload mb-4" onClick={scrollToPreview} onImageChange={(image) => { onChange(image); scrollToPreview(); }}>
       {/* 1. 상단 라벨 및 삭제 버튼 영역 */}
       <div className="flex justify-between items-end mb-1">
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide cursor-default">
@@ -42,14 +45,19 @@ const ImageUploader = React.memo(({
 
       {/* 2. 업로드 영역 (Label로 감싸서 클릭 시 파일 선택창 자동 활성화) */}
       <label 
-        className={`relative block w-full ${isSmall ? 'h-32' : 'aspect-video'} bg-[#0F172A]/50 border-2 border-dashed border-white/10 rounded-lg overflow-hidden hover:border-white/20 transition-all duration-200 ease-out group cursor-pointer focus-within:ring-2 focus-within:ring-[#22C55E] focus-within:border-transparent shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-xl)]`}
+        className={`builder-upload-zone relative block w-full ${isSmall ? 'h-32' : 'aspect-video'} overflow-hidden group cursor-pointer`}
       >
         {hasImage ? (
-          <img src={value} alt={label} className="w-full h-full object-contain bg-white" />
+          <img src={value} alt={label} draggable={false} className="w-full h-full object-contain bg-white" />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-            <span className="text-2xl mb-1" aria-hidden="true">+</span>
-            <span className="text-[10px] font-bold">UPLOAD</span>
+          <div className="builder-upload-placeholder absolute inset-0 flex flex-col items-center justify-center">
+            <svg className="builder-upload-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="4" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="m21 16-5-5L5 21" />
+            </svg>
+            <span>이미지 선택</span>
+            <span className="builder-upload-hint">이미지를 끌어 놓거나 클릭하세요</span>
           </div>
         )}
         
@@ -58,17 +66,18 @@ const ImageUploader = React.memo(({
             type="file" 
             accept="image/*" 
             className="sr-only" 
-            onChange={onChange} 
+            aria-label={`${label} 파일 선택`}
             onClick={(e) => (e.currentTarget.value = '')} 
         />
       </label>
       
       {/* 이미지 편집 및 워터마크 버튼 */}
-      <div className="mt-2 flex justify-end gap-2">
+      <div className="builder-upload-actions mt-2 flex justify-end gap-2">
+        {hasImage && canProcessImage(value) && onEditImage && <button type="button" className="builder-button builder-button-small" onClick={event => { event.stopPropagation(); onEditImage(); }}>누끼·보정</button>}
         {onApplyWatermark && hasImage && (
             <button 
                 onClick={(e) => { e.stopPropagation(); onApplyWatermark(); }}
-                className={`text-xs px-2 py-1 rounded inline-flex items-center gap-1 transition-all duration-200 ease-out ${isWatermarkOn ? 'bg-purple-900/40 text-purple-400 font-bold' : 'bg-white/5 text-slate-400 hover:text-purple-400'}`}
+                className={`builder-watermark-button text-xs px-2 py-1 rounded inline-flex items-center gap-1 ${isWatermarkOn ? 'is-active' : ''}`}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -77,20 +86,9 @@ const ImageUploader = React.memo(({
             </button>
         )}
 
-        <a 
-            href="https://new.express.adobe.com/" 
-            target="_blank" 
-            rel="noreferrer"
-            className="text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-xs font-bold px-4 py-2 rounded-full inline-flex items-center gap-1.5 transition-all duration-200 ease-out shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transform hover:-translate-y-0.5 focus:ring-2 focus:ring-violet-300 focus:outline-none"
-            onClick={(e) => e.stopPropagation()} 
-        >
-            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-            Adobe로 이미지 편집
-        </a>
       </div>
-    </div>
+      {framingControls}
+    </ImageDropZone>
   );
 });
 
@@ -134,9 +132,18 @@ interface EditorProps {
   onChange: (value: React.SetStateAction<ProductData>) => void;
   onGenerateAI: () => void;
   isLoading: boolean;
+  onEditImage?: (key: string) => void;
+  onFitImage?: (target: FramingTarget) => void;
+  onResetFraming?: (target: FramingTarget) => void;
+  fitting?: FramingTarget | null;
 }
 
-const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading }) => {
+const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading, onEditImage, onFitImage, onResetFraming, fitting }) => {
+  const framingControls = (target: FramingTarget) => onFitImage && <div className="builder-fit-controls">
+    <button type="button" className="builder-button builder-button-small" disabled={Boolean(fitting) || !canProcessImage(framingSource(data, target))} onClick={event => { event.stopPropagation(); onFitImage(target); }}>{fitting === target ? '맞추는 중…' : '제품 크기 맞춤'}</button>
+    {data.productFraming?.[target] && <button type="button" className="builder-button builder-button-small" onClick={event => { event.stopPropagation(); onResetFraming?.(target); }}>맞춤 해제</button>}
+    {data.productFraming?.[target] && <small>오른쪽 제품을 끌어 이동 · 모서리 손잡이로 크기 조절</small>}
+  </div>;
 
   // --- 핸들러 함수들 ---
   
@@ -160,13 +167,8 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
   };
 
   // 이미지 업로드
-  const handleImageChange = (key: keyof ProductData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => onChange(prev => ({ ...prev, [key]: reader.result as string }));
-      reader.readAsDataURL(file);
-    }
+  const handleImageChange = (key: keyof ProductData) => (image: string) => {
+    onChange(prev => ({ ...prev, [key]: image }));
   };
 
   // 워터마크 적용 (토글 방식)
@@ -232,18 +234,11 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
         options: prev.options.map(opt => opt.id === id ? { ...opt, name } : opt)
     }));
   };
-  const updateOptionImage = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onChange(prev => ({
-            ...prev,
-            options: prev.options.map(opt => opt.id === id ? { ...opt, image: reader.result as string } : opt)
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
+  const updateOptionImage = (id: string, image: string) => {
+    onChange(prev => ({
+      ...prev,
+      options: prev.options.map(opt => opt.id === id ? { ...opt, image } : opt)
+    }));
   };
 
   // 서브포인트 렌더링 헬퍼
@@ -266,7 +261,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
         <div className="mt-4 pt-4 border-t border-dashed border-white/10 animate-fade-in-down">
             <div className="text-xs font-bold text-slate-500 mb-2 uppercase">{prefix} - {n}</div>
             {isImgActive ? (
-                <ImageUploader label={`Image ${prefix === 'point1' ? '1' : '2'}-${n}`} value={(data as any)[imgKey]} targetId={targetId} onDelete={() => removeSlot(imgKey)} onChange={handleImageChange(imgKey)} onApplyWatermark={() => applyWatermark(imgKey)} isWatermarkOn={data.watermarkSettings?.[imgKey]?.show} />
+                <ImageUploader label={`Image ${prefix === 'point1' ? '1' : '2'}-${n}`} value={(data as any)[imgKey]} targetId={targetId} onDelete={() => removeSlot(imgKey)} onChange={handleImageChange(imgKey)} onEditImage={() => onEditImage?.(imgKey)} onApplyWatermark={() => applyWatermark(imgKey)} isWatermarkOn={data.watermarkSettings?.[imgKey]?.show} />
             ) : (
                 <button onClick={() => enableSlot(imgKey)} className="w-full py-2 mb-4 border border-dashed border-white/10 rounded text-xs text-slate-500 hover:bg-white/5 transition-all duration-200 ease-out shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]">+ 이미지 추가</button>
             )}
@@ -285,16 +280,16 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
   };
 
   return (
-    <div className="p-6 pb-32 space-y-8 relative">
+    <div className="builder-editor-content p-6 pb-32 space-y-8 relative">
       
       {/* 1. 기본 설정 */}
       <section className="space-y-4" onClick={() => scrollTo('preview-top')}>
-        <h2 className="text-lg font-black text-white border-b border-white/10 pb-2 font-mono">📂 기본 설정</h2>
+        <h2 className="builder-section-heading">기본 설정</h2>
         <div className="mb-4">
             <label className="block text-sm font-bold text-slate-500 mb-2">컬러 테마</label>
             <div className="flex gap-2 flex-wrap mb-2">
                 {COLOR_PRESETS.map(p => (
-                    <button key={p.value} onClick={() => handleColorChange(p.value)} className={`w-8 h-8 rounded-full border-2 transition-all duration-200 ease-out shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] ${data.themeColor === p.value ? 'border-gray-600 scale-110' : 'border-transparent hover:scale-105'}`} style={{ background: p.value }} title={(p as any).label || p.value} />
+                    <button key={p.value} onClick={() => handleColorChange(p.value)} className="builder-color-swatch" style={{ background: p.value }} title={(p as any).label || p.value} aria-label={p.label} aria-pressed={data.themeColor === p.value} />
                 ))}
             </div>
              <div className="flex gap-2">
@@ -318,10 +313,10 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
       {/* 2. 메인 이미지 */}
       <section className="space-y-4" onClick={() => scrollTo('preview-main')}>
-        <h2 className="text-lg font-black text-white border-b border-white/10 pb-2 font-mono">🖼️ 메인 이미지</h2>
+        <h2 className="builder-section-heading">메인 이미지</h2>
         
         {/* 워터마크 등록 영역 */}
-        <div className="mb-6 p-4 bg-purple-900/20 rounded-xl border border-purple-500/30 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out">
+        <ImageDropZone label="워터마크" className="builder-watermark-panel mb-6 p-4 rounded-xl border" onImageChange={handleImageChange('watermarkImage')}>
             <h3 className="text-sm font-bold text-purple-400 mb-2 flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -331,28 +326,28 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
             <div className="flex gap-4 items-center">
                 <div className="w-16 h-16 bg-white/5 border border-purple-500/30 rounded-lg flex items-center justify-center overflow-hidden relative group cursor-pointer">
                     {data.watermarkImage ? (
-                        <img src={data.watermarkImage} className="w-full h-full object-contain" alt="watermark" />
+                        <img src={data.watermarkImage} draggable={false} className="w-full h-full object-contain" alt="watermark" />
                     ) : (
                        <span className="text-purple-400 text-xs text-center leading-tight">IMG<br/>UPLOAD</span>
                     )}
-                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageChange('watermarkImage')} title="워터마크 이미지 업로드" />
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" title="워터마크 이미지 업로드" />
                 </div>
                 <div className="flex-1 text-xs text-slate-500">
-                    <p className="font-bold">투명 배경(PNG) 권장</p>
+                    <p className="font-bold">끌어 놓거나 클릭 · 투명 PNG 권장</p>
                     <p>등록 후 각 이미지 섹션에서 '워터마크 삽입' 버튼을 눌러 적용하세요.</p>
                 </div>
                 {data.watermarkImage && (
                     <button onClick={() => onChange(prev => ({ ...prev, watermarkImage: null }))} className="text-red-400 text-xs hover:text-red-600 underline">삭제</button>
                 )}
             </div>
-        </div>
+        </ImageDropZone>
 
-        <ImageUploader label="Main Image" value={data.mainImage} targetId="preview-main" onChange={handleImageChange('mainImage')} onApplyWatermark={() => applyWatermark('mainImage')} isWatermarkOn={data.watermarkSettings?.['mainImage']?.show} />
+        <ImageUploader label="Main Image" value={data.mainImage} targetId="preview-main" onChange={handleImageChange('mainImage')} onEditImage={() => onEditImage?.('mainImage')} onApplyWatermark={() => applyWatermark('mainImage')} isWatermarkOn={data.watermarkSettings?.['mainImage']?.show} framingControls={framingControls('main')}/>
       </section>
 
       {/* 3. 스펙 정보 */}
       <section className="space-y-4" onClick={() => scrollTo('preview-spec')}>
-         <h2 className="text-lg font-black text-white border-b border-white/10 pb-2 font-mono">📝 스펙 정보</h2>
+         <h2 className="builder-section-heading">스펙 정보</h2>
          <div className="grid grid-cols-2 gap-3">
             {Object.keys(SPEC_LABELS).map((key) => (
               <div key={key}>
@@ -367,10 +362,10 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
          <div className="mt-4 pt-4 border-t border-dashed border-white/10">
             <ImageUploader 
                 label="동영상 삽입 (이미지)" 
-                subLabel="800x450 권장" 
+                subLabel="800x450 권장 · GIF 원본 유지"
                 value={data.videoInsertImage} 
                 targetId="preview-spec" 
-                onChange={handleImageChange('videoInsertImage')} 
+                onChange={handleImageChange('videoInsertImage')} onEditImage={() => onEditImage?.('videoInsertImage')}
                 onDelete={() => onChange(prev => ({ ...prev, videoInsertImage: null }))}
             />
          </div>
@@ -379,7 +374,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
       {/* 4. 패키지 이미지 정보 (분리됨) */}
       <section className="space-y-4" onClick={() => scrollTo('preview-package')}>
         <div className="flex justify-between items-center border-b border-white/10 pb-2">
-            <h2 className="text-lg font-black text-white font-mono">📦 패키지 이미지 설정</h2>
+            <h2 className="builder-section-heading builder-section-heading-inline">패키지 이미지 설정</h2>
             <label className="relative inline-flex items-center cursor-pointer">
                 <input 
                     type="checkbox" 
@@ -394,7 +389,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
         {data.isPackageImageEnabled && (
             <div className="grid grid-cols-2 gap-4 animate-fade-in-down">
-                <div className="col-span-1"><ImageUploader label="Package Image" value={data.packageImage} isSmall={true} targetId="preview-package" onChange={handleImageChange('packageImage')} onApplyWatermark={() => applyWatermark('packageImage')} isWatermarkOn={data.watermarkSettings?.['packageImage']?.show} /></div>
+                <div className="col-span-1"><ImageUploader label="Package Image" value={data.packageImage} isSmall={true} targetId="preview-package" onChange={handleImageChange('packageImage')} onEditImage={() => onEditImage?.('packageImage')} onApplyWatermark={() => applyWatermark('packageImage')} isWatermarkOn={data.watermarkSettings?.['packageImage']?.show} /></div>
                  <div className="col-span-1 flex items-center justify-center text-xs text-gray-400">패키지 이미지는<br/>작게 출력됩니다.</div>
             </div>
         )}
@@ -403,11 +398,12 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
       {/* 5. 옵션 */}
       <section className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onClick={() => scrollTo('preview-option')}>
          <div className="flex justify-between items-center mb-4">
-             <h2 className="text-md font-bold text-white font-mono">✨ 추가 옵션 (Option)</h2>
+              <h2 className="builder-section-heading builder-section-heading-inline">추가 옵션</h2>
              <button onClick={addOption} className="text-xs bg-white/10 text-slate-400 px-3 py-1.5 rounded hover:bg-white/20 hover:text-white transition-all duration-200 ease-out shadow-sm hover:shadow-md">+ 추가</button>
          </div>
          {data.options.map((opt, i) => (
-             <div key={opt.id} className="bg-[#0F172A]/50 p-3 rounded-lg border border-white/10 mb-3 last:mb-0 relative shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onFocus={() => scrollTo('preview-option')}>
+              <div key={opt.id} onFocus={() => scrollTo('preview-option')}>
+                <ImageDropZone label={`옵션 ${i + 1}`} className="bg-[#0F172A]/50 p-3 rounded-lg border border-white/10 mb-3 relative shadow-[var(--shadow-md)]" onImageChange={(image) => { updateOptionImage(opt.id, image); scrollTo('preview-option'); }}>
                  <div className="flex justify-between items-center mb-2">
                     <div className="text-xs font-bold text-slate-400">Option {i + 1}</div>
                     <button onClick={() => removeOption(opt.id)} className="text-red-400 text-xs font-bold hover:underline px-2">삭제</button>
@@ -415,18 +411,19 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                  <input type="text" value={opt.name} onChange={(e) => updateOptionName(opt.id, e.target.value)} placeholder="옵션명" className="w-full p-2 bg-[#0F172A]/50 border border-white/10 rounded text-sm mb-2 text-slate-200 outline-none focus:ring-1 focus:ring-[#22C55E]" />
                  <div className="flex items-center gap-3">
                     <div className="w-16 h-16 bg-white/5 rounded overflow-hidden flex-shrink-0 border border-white/10">
-                        {opt.image ? <img src={opt.image} className="w-full h-full object-cover" alt="opt" /> : <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">No Img</div>}
+                        {opt.image ? <img src={opt.image} draggable={false} className="w-full h-full object-cover" alt="opt" /> : <div className="w-full h-full flex items-center justify-center text-xs text-slate-500 text-center">이미지<br/>끌어 놓기</div>}
                     </div>
-                    <input type="file" className="text-xs" onChange={(e) => updateOptionImage(opt.id, e)} />
-                 </div>
-                 {/* 옵션 이미지에는 워터마크 버튼 아직 미구현 (구조상 복잡) - 일단 패스하거나 필요시 추가 */}
-             </div>
+                    <input type="file" accept="image/*" className="text-xs min-w-0" aria-label={`옵션 ${i + 1} 파일 선택`} />
+                  </div>
+                 {canProcessImage(opt.image) && onEditImage && <button type="button" className="builder-button builder-button-small mt-2" onClick={event => { event.stopPropagation(); onEditImage(`option:${opt.id}`); }}>누끼·보정</button>}
+                </ImageDropZone>
+              </div>
          ))}
       </section>
 
       {/* 5. 상세 포인트 */}
       <section className="space-y-6">
-         <h2 className="text-lg font-black text-white border-b border-white/10 pb-2 font-mono">✨ 상세 포인트</h2>
+         <h2 className="builder-section-heading">상세 포인트</h2>
          
          {/* Feature */}
          <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onClick={() => scrollTo('preview-feature')}>
@@ -446,7 +443,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                             onChange={(e) => onChange(prev => ({ ...prev, featureTitle: e.target.value }))}
                         />
                     </div>
-                    <ImageUploader label="Feature Image" value={data.featureImage} targetId="preview-feature" onChange={handleImageChange('featureImage')} onDelete={() => removeSlot('featureImage')} onApplyWatermark={() => applyWatermark('featureImage')} isWatermarkOn={data.watermarkSettings?.['featureImage']?.show} />
+                    <ImageUploader label="Feature Image" value={data.featureImage} targetId="preview-feature" onChange={handleImageChange('featureImage')} onEditImage={() => onEditImage?.('featureImage')} onDelete={() => removeSlot('featureImage')} onApplyWatermark={() => applyWatermark('featureImage')} isWatermarkOn={data.watermarkSettings?.['featureImage']?.show} />
                     <Textarea label="AI 설명" value={data.aiFeatureDesc} placeholder="AI 작성 영역" targetId="preview-feature" onChange={handleTextChange('aiFeatureDesc')} onDelete={() => removeSlot('aiFeatureDesc')} />
                 </>
             ) : (
@@ -472,7 +469,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                         onChange={(e) => onChange(prev => ({ ...prev, point1Title: e.target.value }))}
                     />
                 </div>
-                <ImageUploader label="Image 1-1" value={data.point1Image1} targetId="preview-point1" onChange={handleImageChange('point1Image1')} onDelete={() => removeSlot('point1Image1')} onApplyWatermark={() => applyWatermark('point1Image1')} isWatermarkOn={data.watermarkSettings?.['point1Image1']?.show} />
+                <ImageUploader label="Image 1-1" value={data.point1Image1} targetId="preview-point1" onChange={handleImageChange('point1Image1')} onEditImage={() => onEditImage?.('point1Image1')} onDelete={() => removeSlot('point1Image1')} onApplyWatermark={() => applyWatermark('point1Image1')} isWatermarkOn={data.watermarkSettings?.['point1Image1']?.show} />
                 <Textarea label="설명 1-1" value={data.aiPoint1Desc} placeholder="AI 작성 영역" targetId="preview-point1" onChange={handleTextChange('aiPoint1Desc')} onDelete={() => removeSlot('aiPoint1Desc')} />
                 
                 {renderSubPoint(2, 'point1', 'preview-point1')}
@@ -501,7 +498,7 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
                         onChange={(e) => onChange(prev => ({ ...prev, point2Title: e.target.value }))}
                     />
                  </div>
-                 <ImageUploader label="Image 2-1" value={data.point2Image1} targetId="preview-point2" onChange={handleImageChange('point2Image1')} onDelete={() => removeSlot('point2Image1')} onApplyWatermark={() => applyWatermark('point2Image1')} isWatermarkOn={data.watermarkSettings?.['point2Image1']?.show} />
+                 <ImageUploader label="Image 2-1" value={data.point2Image1} targetId="preview-point2" onChange={handleImageChange('point2Image1')} onEditImage={() => onEditImage?.('point2Image1')} onDelete={() => removeSlot('point2Image1')} onApplyWatermark={() => applyWatermark('point2Image1')} isWatermarkOn={data.watermarkSettings?.['point2Image1']?.show} />
                  <Textarea label="설명 2-1" value={data.aiPoint2Desc} placeholder="AI 작성 영역" targetId="preview-point2" onChange={handleTextChange('aiPoint2Desc')} onDelete={() => removeSlot('aiPoint2Desc')} />
                  
                  {renderSubPoint(2, 'point2', 'preview-point2')}
@@ -514,18 +511,19 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
 
          {/* Size & Thumb */}
          <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-[var(--shadow-lg)] transition-all duration-200 ease-out" onClick={() => scrollTo('preview-size')}>
-            <h2 className="text-md font-bold text-white mb-3">📏 사이즈 및 썸네일</h2>
+            <h2 className="builder-section-heading builder-section-heading-inline mb-3">사이즈 및 썸네일</h2>
             <div className="grid grid-cols-2 gap-4">
-                <ImageUploader label="Size Detail" value={data.sizeImage} targetId="preview-size" onChange={handleImageChange('sizeImage')} onDelete={() => removeSlot('sizeImage')} onApplyWatermark={() => applyWatermark('sizeImage')} isWatermarkOn={data.watermarkSettings?.['sizeImage']?.show} />
-                <ImageUploader label="Thumbnail" value={data.thumbnailImage} targetId="preview-size" onChange={handleImageChange('thumbnailImage')} onDelete={() => removeSlot('thumbnailImage')} onApplyWatermark={() => applyWatermark('thumbnailImage')} isWatermarkOn={data.watermarkSettings?.['thumbnailImage']?.show} />
+                <ImageUploader label="Size Detail" value={data.sizeImage} targetId="preview-size" onChange={handleImageChange('sizeImage')} onEditImage={() => onEditImage?.('sizeImage')} onDelete={() => removeSlot('sizeImage')} onApplyWatermark={() => applyWatermark('sizeImage')} isWatermarkOn={data.watermarkSettings?.['sizeImage']?.show} />
+                <ImageUploader label="Thumbnail" value={data.thumbnailImage} targetId="preview-thumbnails" subLabel={data.mainImage && !data.thumbnailImage ? '메인 사진 사용 중' : undefined} onChange={handleImageChange('thumbnailImage')} onEditImage={() => onEditImage?.('thumbnailImage')} onDelete={() => removeSlot('thumbnailImage')} onApplyWatermark={() => applyWatermark('thumbnailImage')} isWatermarkOn={data.watermarkSettings?.['thumbnailImage']?.show} framingControls={framingControls('thumbnail')}/>
             </div>
          </div>
       </section>
 
       {/* AI Button */}
-      <div className="sticky bottom-0 z-50 bg-[#020617]/90 border-t border-white/10 p-4 -mx-6 shadow-2xl backdrop-blur-md">
-        <button onClick={onGenerateAI} disabled={isLoading} className={`w-full py-4 rounded-xl font-black text-lg shadow-[var(--shadow-lg)] transform transition-all duration-200 ease-out flex items-center justify-center gap-2 ${isLoading ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-[#22C55E] text-black hover:bg-[#16A34A] hover:scale-[1.01] hover:shadow-[var(--shadow-xl)]'}`}>
-          {isLoading ? <>AI가 문구 작성중...</> : <>✨ AI 문구 자동 생성하기</>}
+      <div className="builder-ai-dock sticky bottom-0 z-50 p-4 -mx-6">
+        <button onClick={onGenerateAI} disabled={isLoading} className="builder-ai-button w-full flex items-center justify-center gap-2">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6L12 3Z" /></svg>
+          {isLoading ? <>AI가 문구 작성중...</> : <>AI 문구 자동 생성하기</>}
         </button>
       </div>
     </div>

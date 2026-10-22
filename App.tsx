@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { toJpeg } from "html-to-image";
-import { ProductData } from "./types";
+import { ProductData, SectionSpacingKey } from "./types";
+import { clampSectionSpacing } from "./sectionSpacing";
 import { INITIAL_PRODUCT_DATA, THUMBNAIL_PRESETS } from "./constants";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -8,13 +9,102 @@ import Editor from "./components/Editor";
 import Preview from "./components/Preview";
 import ThumbnailPreview from "./components/ThumbnailPreview";
 import { generateCopywriting } from "./services/geminiService";
+import ImageProcessingDialog, { type ProcessingSession } from "./components/ImageProcessingDialog";
+import { clearChangedImageEdits, getImageSlots, readImageSlot, writeImageSlot, type ImageSlot, type SavedImageEdit } from "./imageProcessing";
+import TextReviewDialog from './components/TextReviewDialog';
+import { applyTextSuggestions, type TextSuggestion } from './textReview';
+import { analyseProductFraming, framingSource, exportProductNode, type FramingTarget, type ProductFraming } from './productFraming';
+import { PreviewImageEditingContext } from './components/EditablePreviewImage';
+import { normalizeImageTransform, isGifImage, type PreviewImageTransform } from './previewImageTransforms';
+import { BuilderDocumentStore } from './documentStore';
+import { useProjectWorkspace } from './useProjectWorkspace';
+import ProjectManagerDialog from './components/ProjectManagerDialog';
+import BuilderHome from './components/BuilderHome';
+import { version } from './package.json';
 
 const App: React.FC = () => {
-  const [data, setData] = useState<ProductData>(INITIAL_PRODUCT_DATA);
+  const storeRef = useRef<BuilderDocumentStore | null>(null);
+  if (!storeRef.current) storeRef.current = new BuilderDocumentStore(structuredClone(INITIAL_PRODUCT_DATA));
+  const store = storeRef.current;
+  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const data = snapshot.data, setData = store.setData;
+  const workspace = useProjectWorkspace(store, snapshot);
+  const [projectManagerOpen, setProjectManagerOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(() => { try { return sessionStorage.getItem('builder_editor_open') === '1'; } catch { return false; } });
+  const startEditor = () => { try { sessionStorage.setItem('builder_editor_open', '1'); } catch {} setEditorOpen(true); };
+  const showHome = async () => { try { await workspace.saveNow(); } catch {} try { sessionStorage.removeItem('builder_editor_open'); } catch {} setEditorOpen(false); };
+  const latestData = useRef(data); latestData.current = data;
+  const [fitting, setFitting] = useState<FramingTarget | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageKey, setSelectedImageKey] = useState<string | null>(null);
+  const handlePreviewTransform = (key: string, value?: PreviewImageTransform) => store.edit(previous => {
+    const previewImageTransforms = { ...previous.previewImageTransforms };
+    if (value) previewImageTransforms[key] = normalizeImageTransform(value); else delete previewImageTransforms[key];
+    return { ...previous, previewImageTransforms };
+  });
+  const handleFitImage = async (target: FramingTarget) => {
+    const projectId = snapshot.project.id;
+    const source = framingSource(data, target);
+    if (!source || fitting) return;
+    setFitting(target);
+    try {
+      const frame = await analyseProductFraming(source);
+      if (store.getSnapshot().project.id !== projectId || framingSource(latestData.current, target) !== source) { setImageMessage('작업이나 사진이 변경되었습니다. 제품 크기 맞춤을 다시 눌러주세요.'); return; }
+      store.edit(previous => {
+        if (framingSource(previous, target) !== source) return previous;
+        const previewImageTransforms = { ...previous.previewImageTransforms }; delete previewImageTransforms[target === 'main' ? 'mainImage' : 'thumbnailImage'];
+        return { ...previous, productFraming: { ...previous.productFraming, [target]: frame }, previewImageTransforms };
+      });
+      setImageMessage(`${target === 'main' ? '메인 사진' : '썸네일'}의 제품 크기와 중심을 맞췄습니다. 제품을 직접 끌어 조절할 수 있습니다.`);
+      requestAnimationFrame(() => document.getElementById(target === 'main' ? 'preview-main' : 'preview-thumbnails')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    } catch (error) { setImageMessage(String(error?.message || error)); }
+    finally { setFitting(null); }
+  };
+  const handleProductFraming = (target: FramingTarget, frame?: ProductFraming) => store.edit(previous => {
+    const productFraming = { ...previous.productFraming };
+    const previewImageTransforms = { ...previous.previewImageTransforms }; delete previewImageTransforms[target === 'main' ? 'mainImage' : 'thumbnailImage'];
+    if (frame) productFraming[target] = frame; else delete productFraming[target];
+    return { ...previous, productFraming, previewImageTransforms };
+  });
+  const [imageSession, setImageSession] = useState<ProcessingSession | null>(null);
+  const [imageMessage, setImageMessage] = useState('');
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewKey, setReviewKey] = useState('');
+  const commitTextReview = (selected: TextSuggestion[]) => {
+    const result = applyTextSuggestions(data, selected);
+    setData(result.data); setReviewOpen(false);
+    setImageMessage(`선택한 수정 ${result.applied}개를 적용했습니다.${result.skipped ? ` 원문이 달라진 ${result.skipped}개는 적용하지 않았습니다.` : ''}`);
+  };
+  const cutoutCache = useRef(new Map<string, { original: string; cutout: Blob }>());
+  const changeData: React.Dispatch<React.SetStateAction<ProductData>> = value => setData(previous => {
+    const next = typeof value === 'function' ? value(previous) : value;
+    return clearChangedImageEdits(previous, next);
+  });
+  const openImageProcessing = (key?: string) => {
+    const slots = getImageSlots(data).filter(slot => !key || slot.key === key);
+    if (!slots.length) { setImageMessage('보정할 상품 사진을 먼저 넣어주세요. GIF·로고는 원본을 유지합니다.'); return; }
+    setImageMessage(''); setImageSession({ slots, edits: { ...data.imageEdits } });
+  };
+  const commitImage = (slot: ImageSlot, image: string, edit?: SavedImageEdit) => {
+    setData(previous => store.getSnapshot().project.id === snapshot.project.id && readImageSlot(previous, slot.key) === slot.image ? writeImageSlot(previous, slot.key, image, edit) : previous);
+    setImageMessage(`${slot.label}에 ${edit ? '보정한 이미지' : '원본'}를 적용했습니다.`);
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("처리 중입니다..."); // ✅ 로딩 메시지 상태 추가
 
   const detailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { cutoutCache.current.clear(); setSelectedImage(null); setSelectedImageKey(null); setImageSession(null); setReviewOpen(false); }, [snapshot.project.id]);
+  useEffect(() => { if (workspace.notice) setImageMessage(workspace.notice); }, [workspace.notice]);
+  useEffect(() => {
+    const keyboard = (event: KeyboardEvent) => {
+      if ((!event.ctrlKey && !event.metaKey) || event.altKey || isLoading || workspace.busy || !editorOpen || document.querySelector('dialog[open]')) return;
+      if ((event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return;
+      const key = event.key.toLowerCase();
+      if (key === 'z') { event.preventDefault(); if (event.shiftKey) store.redo(); else store.undo(); }
+      else if (key === 'y') { event.preventDefault(); store.redo(); }
+    };
+    window.addEventListener('keydown', keyboard); return () => window.removeEventListener('keydown', keyboard);
+  }, [store, isLoading, workspace.busy, editorOpen]);
   const thumbnailRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const handleGenerateAI = async () => {
@@ -70,6 +160,7 @@ const App: React.FC = () => {
         quality: 1.0, // 최고 품질
         backgroundColor: "#ffffff",
         pixelRatio: pixelRatio,
+        filter: exportProductNode,
       });
 
       const videoSection = element.querySelector(
@@ -106,7 +197,8 @@ const App: React.FC = () => {
             throw new Error("동영상 이미지를 찾을 수 없습니다.");
           }
 
-          const videoImgRect = videoImgElement.getBoundingClientRect();
+          const animatedVideo = isGifImage(data.videoInsertImage);
+          const videoImgRect = (animatedVideo ? videoImgElement : videoSection).getBoundingClientRect();
 
           // 좌표 및 크기 (pixelRatio 1이므로 그대로 사용)
           const videoTop = videoImgRect.top - containerRect.top;
@@ -137,8 +229,12 @@ const App: React.FC = () => {
           if (!data.videoInsertImage!.includes("base64,")) {
             throw new Error("동영상 이미지 데이터 형식이 잘못되었습니다.");
           }
-          const originalGifData = data.videoInsertImage!.split(",")[1];
-          zip.file("main2.gif", originalGifData, { base64: true });
+          if (animatedVideo) {
+            const originalGifData = data.videoInsertImage!.split(",")[1];
+            zip.file("main2.gif", originalGifData, { base64: true });
+          } else {
+            zip.file("main2.jpg", cropImage(img, safeVideoTop, videoHeight, width).split(',')[1], { base64: true });
+          }
 
           // Part 3: 하단 (main3.jpg)
           const part3Start = safeVideoTop + videoHeight;
@@ -191,6 +287,7 @@ const App: React.FC = () => {
 
           // html-to-image 사용
           const dataUrl = await toJpeg(ref, {
+            filter: exportProductNode,
             quality: 1.0, // 최고 품질
             backgroundColor: "#ffffff",
             pixelRatio: 1,
@@ -226,6 +323,7 @@ const App: React.FC = () => {
 
     try {
       const dataUrl = await toJpeg(ref, {
+        filter: exportProductNode,
         quality: 1.0, // 최고 품질
         backgroundColor: "#ffffff",
         pixelRatio: 1,
@@ -259,6 +357,13 @@ const App: React.FC = () => {
   };
 
   // ✅ 패키지 이미지 레이아웃 변경 핸들러
+  const handleSectionSpacingChange = (key: SectionSpacingKey, value: number) => {
+    setData((prev) => ({
+      ...prev,
+      sectionSpacing: { ...prev.sectionSpacing, [key]: clampSectionSpacing(value) },
+    }));
+  };
+
   const handlePackageLayoutChange = (layout: {
     x: number;
     y: number;
@@ -344,62 +449,43 @@ const App: React.FC = () => {
   };
 
   // ✅ 임시 저장 함수
-  const saveTemporary = () => {
+  const saveTemporary = async () => {
     try {
-      localStorage.setItem("builder_temp_save", JSON.stringify(data));
-      alert(
-        "임시 저장이 완료되었습니다!\n(브라우저 캐시를 지우면 삭제될 수 있습니다)",
-      );
+      await workspace.saveNow();
+      try { localStorage.setItem('builder_temp_save', JSON.stringify(store.getSnapshot().data)); } catch {}
+      setImageMessage('현재 작업을 저장했습니다. 작업 보관함에서 이어서 열 수 있습니다.');
     } catch (error) {
-      console.error(error);
-      alert("임시 저장 중 오류가 발생했습니다.");
+      setImageMessage(String(error?.message || '저장하지 못했습니다. 작업 파일을 내려받아 보관해주세요.'));
     }
   };
 
   // ✅ 불러오기 함수
   const loadTemporary = () => {
-    const savedData = localStorage.getItem("builder_temp_save");
-    if (!savedData) {
-      alert("저장된 데이터가 없습니다.");
-      return;
-    }
-
-    if (
-      window.confirm(
-        "저장된 데이터를 불러오시겠습니까?\n현재 작업 중인 내용은 사라집니다.",
-      )
-    ) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        // 기존 데이터 구조와 호환성 체크 (간단하게)
-        if (parsedData && typeof parsedData === "object") {
-          setData((prev) => ({ ...prev, ...parsedData }));
-        }
-      } catch (error) {
-        console.error(error);
-        alert("데이터를 불러오는 중 오류가 발생했습니다.");
-      }
-    }
+    setProjectManagerOpen(true);
   };
 
   return (
     // ✅ 화면 전체 높이 고정 (overflow-hidden) -> 내부에서 스크롤 처리
-    <div className="h-screen flex flex-col bg-[#020617] font-sans overflow-hidden text-slate-200">
+    <div className="builder-app h-screen flex flex-col bg-[#020617] font-sans overflow-hidden text-slate-200">
       {/* 헤더 */}
-      <nav className="bg-[#020617]/90 backdrop-blur-md border-white/5 border-b px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-lg flex-shrink-0 h-[70px]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 text-black rounded flex items-center justify-center font-black text-lg">
+      {editorOpen && workspace.hasActiveProject ? <>
+      <nav className="builder-toolbar" aria-label="빌더 도구">
+        <div className="builder-brand">
+          <div className="builder-brand-mark" aria-hidden="true">
             B
           </div>
-          <h1 className="font-bold text-white text-lg font-mono">
-            Detail Page Builder{" "}
-            <span className="text-xs text-green-400">v3.0</span>
-          </h1>
+          <div>
+            <h1 className="builder-brand-title">Detail Page Builder <span>v{version}</span></h1>
+            <p className="builder-brand-caption"><span title={workspace.title}>{workspace.title}</span> · <span role="status" aria-label="자동 저장 상태">{workspace.status}</span></p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="builder-actions">
+          <button onClick={() => void showHome()} className="builder-button" disabled={isLoading || workspace.busy}>작업 홈</button>
+          <button onClick={() => setReviewOpen(true)} className="builder-button" disabled={isLoading}>전체 텍스트 오타 검수</button>
+          <button onClick={() => openImageProcessing()} className="builder-button" disabled={isLoading}>전체 이미지 보정</button>
           <button
             onClick={toggleAllWatermarks}
-            className="px-3 py-2 border border-purple-200 text-purple-600 bg-purple-50 rounded text-sm font-bold hover:bg-purple-100 transition-all duration-200 ease-out flex items-center gap-2 hover:shadow-[var(--shadow-md)]"
+            className="builder-button builder-button-watermark"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -421,29 +507,29 @@ const App: React.FC = () => {
               ? "끄기"
               : "켜기"}
           </button>
-          <div className="w-px h-8 bg-white/10 mx-1"></div>
+          <div className="builder-toolbar-divider" aria-hidden="true"></div>
           <button
             onClick={saveTemporary}
-            className="px-3 py-2 border border-blue-500/30 text-blue-400 bg-blue-500/10 rounded text-sm font-bold hover:bg-blue-500/20 transition-all duration-200 ease-out hover:shadow-[var(--shadow-md)]"
+            className="builder-button"
           >
             임시 저장
           </button>
           <button
             onClick={loadTemporary}
-            className="px-3 py-2 border border-white/10 text-slate-300 bg-white/5 rounded text-sm font-bold hover:bg-white/10 transition-all duration-200 ease-out hover:shadow-[var(--shadow-md)]"
+            className="builder-button"
           >
             불러오기
           </button>
-          <div className="w-px h-8 bg-white/10 mx-1"></div>
+          <div className="builder-toolbar-divider" aria-hidden="true"></div>
           <button
             onClick={exportThumbnails}
-            className="px-4 py-2 border border-white/10 text-slate-300 rounded text-sm font-bold hover:bg-white/10 transition-all duration-200 ease-out hover:shadow-[var(--shadow-md)]"
+            className="builder-button"
           >
             썸네일 저장
           </button>
           <button
             onClick={exportDetailPage}
-            className="px-4 py-2 bg-[#22C55E] text-black rounded text-sm font-bold hover:bg-[#16A34A] shadow-[var(--shadow-lg)] hover:shadow-[var(--shadow-xl)] transition-all duration-200 ease-out"
+            className="builder-button builder-button-primary"
           >
             전체 이미지 저장
           </button>
@@ -451,20 +537,31 @@ const App: React.FC = () => {
       </nav>
 
       {/* 메인 영역 (flex-1로 남은 공간 다 차지) */}
-      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <main className="builder-main flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* 에디터 (좌측) - 독립 스크롤 */}
-        <aside className="w-full lg:w-[450px] border-r border-white/5 bg-[#020617] overflow-y-auto z-20 shadow-[var(--shadow-xl)] relative flex-shrink-0 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <aside className="builder-editor w-full lg:w-[450px] overflow-y-auto relative flex-shrink-0" aria-label="상세페이지 입력 패널">
           <Editor
             data={data}
-            onChange={setData}
+            onChange={changeData}
+            onEditImage={openImageProcessing}
+            onFitImage={handleFitImage}
+            onResetFraming={target => handleProductFraming(target)}
+            fitting={fitting}
             onGenerateAI={handleGenerateAI}
             isLoading={isLoading}
           />
         </aside>
 
         {/* 프리뷰 (우측) - 독립 스크롤 (가로/세로 모두 가능) */}
-        <section className="flex-1 bg-[#0F172A] overflow-auto relative p-8 flex justify-center">
+        <section className="builder-workspace flex-1 overflow-auto relative p-8 flex justify-center" aria-label="실시간 미리보기" onPointerDownCapture={event => { if (!(event.target as Element).closest('.builder-picture-ui')) setSelectedImage(null); }}>
+          <PreviewImageEditingContext.Provider value={{ selected: selectedImage, select: (id, key) => { setSelectedImage(id); if (key) setSelectedImageKey(key); }, transforms: data.previewImageTransforms ?? {}, change: handlePreviewTransform, beginImageEdit: store.beginImageEdit, endImageEdit: store.endImageEdit, revision: data }}>
           <div className="flex flex-col items-center gap-10 min-w-[800px] pb-20">
+            <div className="builder-preview-heading">
+              <div><span className="builder-live-dot" aria-hidden="true"></span>실시간 미리보기</div>
+              {!selectedImageKey && <span className="builder-canvas-size">사진 클릭 · 드래그/모서리/↻ 조절</span>}
+              <div className="builder-history-controls"><button type="button" className="builder-button builder-button-small" aria-label="되돌리기" title="이미지 배치 되돌리기 · Ctrl+Z" disabled={!snapshot.canUndo || snapshot.imageGesture} onClick={store.undo}>↶ 되돌리기</button><button type="button" className="builder-button builder-button-small" aria-label="다시 실행" title="이미지 배치 다시 실행 · Ctrl+Shift+Z" disabled={!snapshot.canRedo || snapshot.imageGesture} onClick={store.redo}>↷ 다시 실행</button></div>
+              {selectedImageKey && <button type="button" className="builder-button builder-button-small" onClick={() => handlePreviewTransform(selectedImageKey)}>선택 이미지 초기화</button>}
+            </div>
             {/* 상세페이지 프리뷰 */}
             <div className="shadow-[var(--shadow-2xl)] bg-white transition-all duration-200 ease-out">
               <Preview
@@ -473,13 +570,15 @@ const App: React.FC = () => {
                 onOptionLayoutChange={handleOptionLayoutChange}
                 onPackageLayoutChange={handlePackageLayoutChange}
                 onWatermarkLayoutChange={handleWatermarkLayoutChange}
+                onSectionSpacingChange={handleSectionSpacingChange}
+                onProductFramingChange={frame => handleProductFraming('main', frame)}
               />
             </div>
 
             {/* 썸네일 프리뷰 */}
-            <div className="bg-white p-6 rounded-xl shadow-[var(--shadow-lg)] border border-gray-100 w-full max-w-[800px] transition-all duration-200 ease-out hover:shadow-[var(--shadow-xl)]">
-              <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase text-center">
-                Thumbnail Check
+            <div id="preview-thumbnails" className="builder-thumbnails p-6 w-full max-w-[800px]">
+              <h3 className="builder-thumbnails-heading">
+                썸네일 미리보기
               </h3>
               <div className="flex justify-center gap-4 flex-wrap">
                 <div className="flex justify-center gap-4 flex-wrap">
@@ -507,19 +606,20 @@ const App: React.FC = () => {
                             hidePackage={preset.hidePackage}
                             externalScale={200 / preset.width}
                             onLayoutChange={handleThumbnailPackageLayoutChange}
+                            onProductFramingChange={frame => handleProductFraming('thumbnail', frame)}
                             ref={(el) => (thumbnailRefs.current[i] = el)}
                           />
                         </div>
                       </div>
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs text-gray-500">
+                        <span className="builder-thumbnail-size">
                           {preset.label}
                         </span>
                         <button
                           onClick={() =>
                             downloadSingleThumbnail(i, preset.label)
                           }
-                          className="px-3 py-1 bg-gray-800 text-white text-xs rounded hover:bg-black transition-colors"
+                          className="builder-button builder-button-small"
                         >
                           다운로드
                         </button>
@@ -530,14 +630,22 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
+          </PreviewImageEditingContext.Provider>
         </section>
       </main>
+      </> : <BuilderHome workspace={workspace} onStart={startEditor} onLibrary={() => setProjectManagerOpen(true)}/>}
+      {workspace.error && <div className="builder-storage-error" role="alert">{workspace.error}<button type="button" className="builder-button" onClick={() => setProjectManagerOpen(true)}>작업 파일 보관하기</button></div>}
+      {imageMessage && <div className="builder-image-message" role="status">{imageMessage}<button type="button" aria-label="안내 닫기" onClick={() => setImageMessage('')}>×</button></div>}
+      {imageSession && <ImageProcessingDialog session={imageSession} cache={cutoutCache.current} onCommit={commitImage} onClose={() => setImageSession(null)}/>}
+      {reviewOpen && <TextReviewDialog data={data} apiKey={reviewKey} onKeyChange={setReviewKey} onApply={commitTextReview} onClose={() => setReviewOpen(false)}/>}
+      {projectManagerOpen && <ProjectManagerDialog store={store} workspace={workspace} onClose={() => setProjectManagerOpen(false)} onSelect={startEditor}/>}
+      {(!workspace.ready || workspace.busy) && <div className="builder-workspace-loading" role="status">{workspace.busy ? '상품 작업을 여는 중…' : '저장한 작업을 확인하는 중…'}</div>}
 
       {/* 로딩 인디케이터 */}
       {isLoading && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm transition-all duration-300">
-          <div className="bg-[#0F172A]/90 border border-white/10 px-8 py-6 rounded-2xl shadow-[var(--shadow-2xl)] flex flex-col items-center gap-4 text-white backdrop-blur-md">
-            <div className="w-10 h-10 border-4 border-white/10 border-t-[#22C55E] rounded-full animate-spin"></div>
+          <div className="builder-loading px-8 py-6 rounded-2xl flex flex-col items-center gap-4">
+            <div className="builder-spinner w-10 h-10 border-4 rounded-full animate-spin"></div>
             <p className="font-bold text-lg tracking-wide">{loadingMessage}</p>{" "}
             {/* ✅ 동적 메시지 표시 */}
           </div>

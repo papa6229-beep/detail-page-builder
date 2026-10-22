@@ -1,4 +1,7 @@
 // types.ts
+import type { SavedImageEdit } from './imageProcessing';
+import type { FramingTarget, ProductFraming } from './productFraming';
+import type { PreviewImageTransform } from './previewImageTransforms';
 
 export interface SummaryInfo {
   feature: string;   // 특징
@@ -21,7 +24,12 @@ export interface OptionItem {
   height: number;
 }
 
+export type SectionSpacingKey = 'main' | 'spec' | 'summary' | 'video' | 'package' | 'options' | 'feature' | 'point1' | 'point2' | 'size';
+
 export interface ProductData {
+  imageEdits?: Record<string, SavedImageEdit>;
+  productFraming?: Partial<Record<FramingTarget, ProductFraming>>;
+  previewImageTransforms?: Record<string, PreviewImageTransform>;
   productNameKr: string;
   productNameEn: string;
   brandName: string;
@@ -63,6 +71,7 @@ export interface ProductData {
   // Layout Data
   packageLayout?: { x: number, y: number, width: number, height: number };
   thumbnailPackageLayout?: { x: number, y: number, width: number, height: number };
+  sectionSpacing?: Partial<Record<SectionSpacingKey, number>>;
 
   // AI Generated Text
   aiSummary: string;

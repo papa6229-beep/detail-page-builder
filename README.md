@@ -1,20 +1,43 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Detail Page Builder · v3.1.0
 
-# Run and deploy your AI Studio app
+상품 사진과 문구로 상세페이지 및 썸네일을 만드는 반자동 편집기입니다.
 
-This contains everything you need to run your app locally.
+## 주요 기능
 
-View your app in AI Studio: https://ai.studio/apps/drive/1bhN4LDY0ms3dglxV1K7o2hHf9GKMPR-k
+- 사진 끌어놓기, 개별·순차 누끼/톤/접촉 그림자 보정과 원본 복구
+- 미리보기에서 사진 이동·비율 유지 크기 조절·회전·제품 크기 맞춤
+- 이미지 배치 실행 취소/다시 실행, 섹션 간격 조절
+- 사진·문구·배치 자동 저장, 마지막 작업 복구, 상품별 작업 보관함
+- 작업 이름 변경, JSON 작업 파일 가져오기·내려받기
+- 수정할 항목을 선택하는 전체 텍스트 오타 검수
+- 800px 상세페이지 및 4종 썸네일 JPG 출력, GIF 원본을 유지하는 분할 ZIP 출력
 
-## Run Locally
+## 로컬 실행
 
-**Prerequisites:**  Node.js
+Node.js와 npm이 필요합니다.
 
+```sh
+npm ci
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+기본 주소는 `http://localhost:3000/`입니다. 이미지 실험실은 `npm run lab`으로 별도 실행할 수 있습니다.
+
+```sh
+npm run build
+npx tsc --noEmit
+```
+
+Vercel에서는 Vite 프로젝트로 빌드하며 출력 폴더는 `dist`입니다. `vercel.json`에는 브라우저 내 이미지 처리를 위한 격리 헤더가 포함되어 있습니다.
+
+## 저장과 AI 연결
+
+작업은 같은 사이트 주소·같은 브라우저의 IndexedDB에 저장됩니다. 다른 PC로 옮기거나 별도로 보관하려면 작업 보관함에서 JSON 파일을 내려받으세요. 새로고침 후 편집 배치는 복구되며 실행 취소 기록은 새 세션에서 시작합니다.
+
+기존 AI 문구 생성 연결은 OpenRouter를 사용하며 환경변수 이름 `VITE_GEMINI_API_KEY`를 유지합니다. 오타 검수 창에서 직접 입력한 연결 키는 현재 열린 앱의 메모리에만 남고 작업 JSON에는 포함되지 않습니다. 누끼와 그림자 처리는 브라우저에서 수행합니다.
+
+## 검증과 라이선스
+
+브라우저 회귀 시나리오는 `tests/*.browser.js`, 기능별 검증 기록은 `docs/`에 있습니다. 실제 상품사진의 누끼 경계와 그림자 자연스러움은 원본 사진으로 최종 확인하세요.
+
+누끼 처리에 사용하는 외부 라이브러리·모델의 고지와 이용 조건은 `public/third-party/`를 확인하세요.

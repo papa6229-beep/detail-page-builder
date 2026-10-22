@@ -1,0 +1,65 @@
+async (page) => {
+  const context = await page.context().browser().newContext({ viewport: { width: 1440, height: 1050 }, acceptDownloads: true });
+  const p = await context.newPage(); p.setDefaultTimeout(8000);
+  try {
+    await p.goto('http://127.0.0.1:3000/');
+    const assert = (condition, message) => { if (!condition) throw new Error(message); };
+    await p.getByRole('main', { name: '빌더 작업 홈', exact: true }).waitFor();
+    await p.getByRole('button', { name: '작업 시작하기', exact: true }).click();
+    assert(await p.getByRole('button', { name: '되돌리기', exact: true }).count() === 1, 'Image editing needs undo and redo controls');
+    const saved = () => p.getByRole('status', { name: '자동 저장 상태', exact: true }).filter({ hasText: '저장됨' }).waitFor();
+    await saved();
+    const name = p.getByPlaceholder('예: 바나나 오나홀', { exact: true }), brand = p.getByPlaceholder('예: BANANA MALL', { exact: true });
+    await name.fill('프로젝트 A'); await brand.fill('브랜드 A');
+    const fixture = await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 400; c.height = 300; const x = c.getContext('2d'); x.fillStyle = '#ba3054'; x.fillRect(50, 50, 300, 200); return c.toDataURL().split(',')[1]; });
+    const mainZone = p.getByRole('group', { name: 'Main Image 이미지 첨부', exact: true });
+    await mainZone.locator('input[type=file]').setInputFiles({ name: 'history.png', mimeType: 'image/png', buffer: Buffer.from(fixture, 'base64') });
+    const source = await mainZone.locator('img').getAttribute('src');
+    await saved();
+    const move = p.getByRole('button', { name: '메인 이미지 이동', exact: true }); await move.scrollIntoViewIfNeeded(); const box = await move.boundingBox();
+    await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await p.mouse.down();
+    await p.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2 + 20, { steps: 12 });
+    // Exceed the autosave debounce while the drag is held: only the completed gesture may persist.
+    await p.waitForTimeout(750);
+    const held = await p.evaluate(async () => { const { readActiveProject, readProject } = await import('/projectStorage.ts'); return (await readProject(await readActiveProject())).data.previewImageTransforms?.mainImage?.x ?? 0; });
+    assert(held === 0, 'Autosave must defer intermediate pointer positions until the gesture ends');
+    await p.mouse.up();
+    const photo = p.locator('#preview-main img[alt="Main"]'); const moved = await photo.getAttribute('data-image-x');
+    assert(Number(moved) > 0, 'Fixture drag must actually move the photo');
+    await p.keyboard.press('Control+z');
+    assert(await photo.getAttribute('data-image-x') === '0' && await p.getByRole('button', { name: '되돌리기', exact: true }).isDisabled(), 'One undo must revert all pointer moves from one drag');
+    await p.keyboard.press('Control+Shift+z');
+    assert(await photo.getAttribute('data-image-x') === moved, 'Redo must restore the complete drag');
+    await brand.click(); await brand.press('End'); await brand.pressSequentially('X'); await brand.press('Control+z');
+    assert(await brand.inputValue() === '브랜드 A' && await photo.getAttribute('data-image-x') === moved && await p.getByRole('button', { name: '되돌리기', exact: true }).isEnabled(), 'Text Ctrl+Z must remain native and preserve image history');
+    await brand.fill('텍스트는 유지'); await p.getByRole('button', { name: '되돌리기', exact: true }).click();
+    assert(await brand.inputValue() === '텍스트는 유지' && await photo.getAttribute('data-image-x') === '0', 'Image undo must not overwrite newer text');
+    await p.getByRole('button', { name: '다시 실행', exact: true }).click(); await brand.fill('브랜드 A'); await saved();
+    await p.reload(); await saved();
+    assert(await name.inputValue() === '프로젝트 A' && await brand.inputValue() === '브랜드 A' && await photo.getAttribute('src') === source && await photo.getAttribute('data-image-x') === moved, 'Autosave must restore text, photo and layout after reload');
+    await p.getByRole('button', { name: '불러오기', exact: true }).click();
+    const library = p.getByRole('dialog', { name: '작업 보관함', exact: true });
+    await library.getByRole('button', { name: '새 상품 작업', exact: true }).click(); await library.waitFor({ state: 'detached' });
+    assert(await name.inputValue() === '' && await p.getByRole('button', { name: '되돌리기', exact: true }).isDisabled(), 'New project must be blank and have independent history');
+    await name.fill('프로젝트 B'); await brand.fill('브랜드 B'); await saved();
+    await p.getByRole('button', { name: '불러오기', exact: true }).click();
+    const rowA = library.locator('[data-project-row]').filter({ hasText: '프로젝트 A' });
+    await rowA.getByRole('button', { name: '열기', exact: true }).click(); await library.waitFor({ state: 'detached' });
+    assert(await name.inputValue() === '프로젝트 A' && await brand.inputValue() === '브랜드 A' && await photo.getAttribute('src') === source, 'Switching projects must restore each photo and text independently');
+    await p.getByRole('button', { name: '불러오기', exact: true }).click();
+    await library.getByLabel('현재 작업 이름').fill('보관용 A'); await saved();
+    const downloadEvent = p.waitForEvent('download'); await library.getByRole('button', { name: '작업 파일 내려받기', exact: true }).click();
+    const file = await downloadEvent, stream = await file.createReadStream(), chunks = []; for await (const chunk of stream) chunks.push(chunk);
+    const bytes = Buffer.concat(chunks), exported = JSON.parse(bytes.toString('utf8'));
+    assert(exported.format === 'detail-page-builder-project' && exported.data.mainImage === source && exported.name === '보관용 A' && !('reviewKey' in exported.data), 'Export must contain the full product document without connection keys');
+    await library.locator('input[type=file]').setInputFiles({ name: 'project.json', mimeType: 'application/json', buffer: bytes });
+    await library.waitFor({ state: 'detached' });
+    await p.getByRole('button', { name: '불러오기', exact: true }).click();
+    await p.waitForFunction(() => document.querySelectorAll('dialog[open] [data-project-row]').length === 3);
+    assert(await library.locator('[data-project-row]').count() === 3, 'Import must create a separate project rather than overwrite existing work');
+    await library.locator('input[type=file]').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"wrong":true}') });
+    await library.getByRole('alert').waitFor();
+    assert(await name.inputValue() === '프로젝트 A' && await photo.getAttribute('src') === source, 'Invalid project must preserve current work');
+    return { passed: 12, exportedBytes: bytes.length };
+  } finally { await context.close(); }
+}

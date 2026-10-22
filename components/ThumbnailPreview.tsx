@@ -1,8 +1,12 @@
 import React, { forwardRef } from 'react';
 import { Rnd } from 'react-rnd';
 import { ProductData } from '../types';
+import FramedProductImage from './FramedProductImage';
+import type { ProductFraming } from '../productFraming';
+import EditablePreviewImage, { PreviewImageEditingContext } from './EditablePreviewImage';
 
 interface ThumbnailPreviewProps {
+  onProductFramingChange?: (frame: ProductFraming) => void;
   data: ProductData;
   width: number;
   height: number;
@@ -11,7 +15,8 @@ interface ThumbnailPreviewProps {
   onLayoutChange?: (layout: { x: number, y: number, width: number, height: number }) => void;
 }
 
-const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ data, width, height, hidePackage, externalScale = 1, onLayoutChange }, ref) => {
+const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ data, width, height, hidePackage, externalScale = 1, onLayoutChange, onProductFramingChange }, ref) => {
+  const editing = React.useContext(PreviewImageEditingContext);
   const image = data.thumbnailImage || data.mainImage;
 
   // 썸네일 크기에 따른 스케일 비율 계산 (기준: 500px 너비)
@@ -32,13 +37,14 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
   return (
     <div 
       ref={ref}
+      data-image-canvas={`thumbnail-${width}`}
       style={{ width: `${width}px`, height: `${height}px` }}
       className="bg-white relative overflow-hidden flex items-center justify-center shrink-0 border border-gray-200 shadow-[var(--shadow-sm)] transition-all duration-200 ease-out hover:shadow-[var(--shadow-md)]"
     >
       {/* 1. 이미지 영역 (Background Layer) */}
       <div className="absolute inset-0 flex items-center justify-center bg-white z-0">
         {image ? (
-          <img src={image} className="w-full h-full object-contain" alt="Thumbnail" />
+          data.productFraming?.thumbnail ? <FramedProductImage src={image} alt="Thumbnail" frame={data.productFraming.thumbnail} target="thumbnail" label={`썸네일 ${width}`} externalScale={externalScale} onChange={onProductFramingChange}/> : <EditablePreviewImage editKey="thumbnailImage" instanceId={`thumbnail-${width}`} label={`썸네일 ${width} 이미지`} src={image} className="w-full h-full object-contain" alt="Thumbnail" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-200 font-bold" style={{ fontSize: `${20 * scale}px` }}>
             NO IMAGE
@@ -115,6 +121,7 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
       {/* 3. 패키지 이미지 오버레이 (Draggable) */}
       {(!hidePackage && data.packageImage && (data.isPackageImageEnabled ?? true)) && (
         <Rnd
+          disableDragging={Boolean(editing)} enableResizing={editing ? false : undefined}
           scale={externalScale}
           size={{ width: currentLayout.width, height: currentLayout.height }}
           position={{ x: currentLayout.x, y: currentLayout.y }}
@@ -141,14 +148,14 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
           className="group z-20"
           lockAspectRatio={true} // 이미지 비율 유지
         >
-             <div className="w-full h-full relative group-hover:border border-blue-400 border-dashed">
-                <img
+             <div className="w-full h-full relative">
+                <EditablePreviewImage editKey="thumbnailPackage" instanceId={`thumbnail-package-${width}`} label={`썸네일 ${width} 패키지`}
                     src={data.packageImage}
                     className="w-full h-full object-contain pointer-events-none" // pointer-events-none to let Rnd handle drag
                     alt="Package Overlay"
                 />
                 {/* 핸들 (호버 시 표시) */}
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100"></div>
+                {!editing && <div className="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100"></div>}
              </div>
         </Rnd>
       )}

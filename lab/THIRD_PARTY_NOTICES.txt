@@ -1,0 +1,13 @@
+Browser image-processing tool, reused by the builder and local image lab.
+
+Background removal: @imgly/background-removal 1.7.0
+https://github.com/imgly/background-removal-js
+License: GNU Affero General Public License v3.0.
+The complete upstream license is included at public/third-party/background-removal-LICENSE.md
+and served as /third-party/background-removal-LICENSE.md.
+Integrated locally into the builder on 2026-10-22; not deployed by this patch.
+Upstream source and model distribution information:
+https://github.com/imgly/background-removal-js/tree/main/packages/web
+
+ONNX Runtime Web 1.21.0: Microsoft, MIT License.
+https://github.com/microsoft/onnxruntime
