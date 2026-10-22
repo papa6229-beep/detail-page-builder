@@ -46,6 +46,35 @@
 .image-processor .shadow-sliders output { text-align: right; }
 .image-processor .shadow-adjust p { margin: 16px 0 0; font-size: 11px; line-height: 1.7; color: #aaa395; }
 .image-processor .comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.image-processor .image-edit-workbench { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.image-processor .color-adjust { padding: 16px; background: #22211c; border: 1px solid #504737; border-radius: 9px; color: #d8d3c5; max-height: 675px; overflow: auto; }
+.image-processor .color-adjust summary { cursor: pointer; color: #e6cd94; font-size: 14px; font-weight: 600; }
+.image-processor .color-adjust summary > span { display: block; font-size: 10px; color: #aaa395; margin: 8px 0 18px; font-weight: 400; }
+.image-processor .color-adjust-grid > section + section { margin-top: 24px; padding-top: 18px; border-top: 1px solid #504737; }
+.image-processor .color-panel-heading { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.image-processor .color-panel-heading h3 { margin: 0; color: #d8c79f; font-size: 12px; font-weight: 500; }
+.image-processor .color-panel-heading select { max-width: 100px; padding: 4px; background: #171713; color: #e6cd94; border: 1px solid #66563b; border-radius: 4px; font-size: 11px; }
+.image-processor .color-histogram { display: block; width: 100%; height: 62px; background: #171713; border-bottom: 2px solid #b9a676; margin-bottom: 14px; }
+.image-processor .color-histogram polygon { fill: #c8b4878c; }
+.image-processor .color-levels { display: grid; gap: 9px; }
+.image-processor .color-levels label { display: grid; grid-template-columns: 75px minmax(35px,1fr) 53px; align-items: center; gap: 8px; font-size: 11px; }
+.image-processor .color-levels input[type=range] { width: 100%; min-width: 0; }
+.image-processor .color-adjust input[type=number] { width: 53px; min-width: 0; padding: 5px 4px; border: 1px solid #514936; background: #171713; color: #e6cd94; border-radius: 3px; font-size: 11px; }
+.image-processor .color-curve { display: block; width: 100%; height: 215px; background: #171713; border: 1px solid #66563b; overflow: visible; touch-action: none; margin: 10px 0 16px; cursor: crosshair; }
+.image-processor .curve-grid { stroke: #66563b66; stroke-width: .5; pointer-events: none; }
+.image-processor .curve-diagonal { stroke: #8b836c88; stroke-width: .6; stroke-dasharray: 4 4; pointer-events: none; }
+.image-processor .curve-line { fill: none; stroke: #e6cd94; stroke-width: 1.8; pointer-events: none; }
+.image-processor .color-curve.red .curve-line { stroke: #ed9690; }
+.image-processor .color-curve.green .curve-line { stroke: #99c99b; }
+.image-processor .color-curve.blue .curve-line { stroke: #9ebdea; }
+.image-processor .color-curve circle { fill: #25221a; stroke: #e6cd94; stroke-width: 1.5; cursor: grab; }
+.image-processor .color-curve circle.selected { fill: #e6cd94; }
+.image-processor .color-curve circle:focus-visible { outline: 2px solid #fff; }
+.image-processor .curve-point-values { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 11px; }
+.image-processor .curve-point-values label { display: flex; align-items: center; gap: 5px; }
+.image-processor .color-help { margin: 12px 0 0; color: #aaa395; font-size: 10px; line-height: 1.7; }
+@media (max-width: 1100px) { .image-processor .image-edit-workbench { grid-template-columns: 1fr; } .image-processor .color-adjust { max-height: none; } .image-processor .color-adjust-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; } .image-processor .color-adjust-grid > section + section { border: 0; padding: 0; margin: 0; } }
+@media (max-width: 600px) { .image-processor .color-adjust-grid { grid-template-columns: 1fr; } }
 .image-processor article { overflow: hidden; border: 1px solid #464137; border-radius: 10px; background: #20201c; }
 .image-processor .panel-heading { display: flex; justify-content: space-between; align-items: center; min-height: 54px; padding: 0 16px; gap: 10px; }
 .image-processor h2 { margin: 0; font-size: 14px; font-weight: 600; }

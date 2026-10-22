@@ -72,6 +72,7 @@ interface PreviewProps {
 
 const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayoutChange, onPackageLayoutChange, onWatermarkLayoutChange, onSectionSpacingChange, onProductFramingChange }, ref) => {
   const editing = React.useContext(PreviewImageEditingContext);
+  const [optionPhotoEdit, setOptionPhotoEdit] = React.useState<string | null>(null);
   const imageOverflow = (key: string): React.CSSProperties | undefined => hasImageTransform(data.previewImageTransforms?.[key]) ? { overflow: 'visible', zIndex: 1 } : undefined;
   const spacingStyle = (key: SectionSpacingKey) => ({ paddingBottom: getSectionSpacing(data, key) });
   const sectionEnd = (key: SectionSpacingKey) => (
@@ -354,16 +355,22 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
           >
              <div className="flex items-center justify-center mb-12 gap-4 opacity-50">
                 <div className="h-px w-12 bg-gray-300"></div>
-                <h3 className="text-xl font-bold tracking-widest text-gray-800 uppercase">Option Check (Resizable)</h3>
+                <h3 className="text-xl font-bold tracking-widest text-gray-800 uppercase">Option Check</h3>
                 <div className="h-px w-12 bg-gray-300"></div>
              </div>
              
              {/* Rnd 캔버스 영역 */}
-             <div className="w-full h-full relative">
+             <div className="w-full relative" style={{ position: 'relative', height: Math.max(...options.map(option => (option.y || 0) + (option.height || 400))) }}>
                {options.map((opt) => (
                  <Rnd
                    key={opt.id}
-                   disableDragging={Boolean(editing)} enableResizing={editing ? false : undefined}
+                   data-option-card={opt.id} tabIndex={-1}
+                   disableDragging={optionPhotoEdit === opt.id} enableResizing={optionPhotoEdit === opt.id ? false : undefined}
+                   cancel=".builder-option-tools, .builder-option-resize"
+                   minWidth={120} minHeight={140}
+                   onDragStart={event => { (event.target as HTMLElement).closest<HTMLElement>('[data-option-card]')?.focus({ preventScroll: true }); editing?.beginImageEdit?.(); }}
+                   onResizeStart={() => editing?.beginImageEdit?.()}
+                   resizeHandleComponent={{ bottomRight: <button type="button" data-editor-only="true" data-option-resize="bottomRight" className="builder-option-resize" aria-label={`옵션 ${options.indexOf(opt) + 1} 박스 크기 조절`} title="드래그 또는 방향키로 박스 크기 조절" onKeyDown={event => { const step = event.shiftKey ? 10 : 1; if (!event.key.startsWith('Arrow')) return; event.preventDefault(); onOptionLayoutChange(opt.id, { x: opt.x, y: opt.y, width: Math.max(120, opt.width + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0)), height: Math.max(140, opt.height + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0)) }); }}/> }}
                    size={{ width: opt.width || 320, height: opt.height || 400 }}
                    position={{ x: opt.x || 0, y: opt.y || 0 }}
                    onDragStop={(e, d) => {
@@ -373,6 +380,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                            width: opt.width || 320, 
                            height: opt.height || 400 
                        });
+                       editing?.endImageEdit?.();
                    }}
                    onResizeStop={(e, direction, ref, delta, position) => {
                        onOptionLayoutChange(opt.id, {
@@ -380,14 +388,16 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                            height: parseInt(ref.style.height),
                            ...position
                        });
+                       editing?.endImageEdit?.();
                    }}
                    className="group z-10" // z-index 확보
                  >
                     {/* 드래그 핸들 및 콘텐츠 */}
+                    {editing && optionPhotoEdit !== opt.id && <div className="builder-option-tools" data-editor-only="true"><button type="button" aria-label={`옵션 ${options.indexOf(opt) + 1} 박스 편집`} aria-pressed={true} onClick={() => { setOptionPhotoEdit(null); editing.select(null); }}>박스 편집</button><button type="button" aria-label={`옵션 ${options.indexOf(opt) + 1} 사진 편집`} aria-pressed={false} disabled={!opt.image} onClick={() => { setOptionPhotoEdit(opt.id); editing.select(`option:${opt.id}`, `option:${opt.id}`); }}>사진 편집</button><span>박스를 끌거나 모서리 조절</span></div>}
                     <div className="w-full h-full flex flex-col p-2 border-2 border-transparent group-hover:border-blue-300 group-hover:bg-blue-50/10 rounded-xl transition-all select-none">
-                        <div style={imageOverflow(`option:${opt.id}`)} className="w-full flex-1 bg-white rounded-3xl overflow-hidden mb-3 border-2 border-gray-100 flex items-center justify-center relative shadow-[var(--shadow-md)] transition-all duration-200 ease-out pointer-events-none hover:shadow-[var(--shadow-lg)]">
+                        <div style={imageOverflow(`option:${opt.id}`)} className="w-full flex-1 min-h-0 bg-white rounded-3xl overflow-hidden mb-3 border-2 border-gray-100 flex items-center justify-center relative shadow-[var(--shadow-md)] transition-all duration-200 ease-out pointer-events-none hover:shadow-[var(--shadow-lg)]">
                            {opt.image ? (
-                             <EditablePreviewImage editKey={`option:${opt.id}`} label={`옵션 ${opt.name || options.indexOf(opt) + 1} 이미지`} src={opt.image} className="w-full h-full object-contain p-4" alt={opt.name} />
+                             <EditablePreviewImage interactive={optionPhotoEdit === opt.id} tools={editing && optionPhotoEdit === opt.id ? <button type="button" aria-label={`옵션 ${options.indexOf(opt) + 1} 박스 편집`} onClick={() => { setOptionPhotoEdit(null); editing.select(null); }}>박스 편집</button> : undefined} editKey={`option:${opt.id}`} label={`옵션 ${opt.name || options.indexOf(opt) + 1} 이미지`} src={opt.image} className="w-full h-full object-contain p-4" alt={opt.name} />
                            ) : (
                              <span className="text-gray-300 font-bold text-sm">NO IMAGE</span>
                            )}

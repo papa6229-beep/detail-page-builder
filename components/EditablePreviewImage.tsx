@@ -14,7 +14,7 @@ interface Box { left: number; top: number; width: number; height: number }
 interface Geometry { canvas: HTMLElement; centerX: number; centerY: number; box: Box; factor: number }
 type Mode = 'move' | 'resize' | 'rotate';
 
-export default function EditablePreviewImage({ editKey, instanceId = editKey, label, box: suppliedBox, ...props }: React.ImgHTMLAttributes<HTMLImageElement> & { editKey: string; instanceId?: string; label: string; box?: Box }) {
+export default function EditablePreviewImage({ editKey, instanceId = editKey, label, box: suppliedBox, interactive = true, tools, ...props }: React.ImgHTMLAttributes<HTMLImageElement> & { editKey: string; instanceId?: string; label: string; box?: Box; interactive?: boolean; tools?: React.ReactNode }) {
   const editing = useContext(PreviewImageEditingContext);
   const image = useRef<HTMLImageElement>(null);
   const [geometry, setGeometry] = useState<Geometry | null>(null);
@@ -93,12 +93,12 @@ export default function EditablePreviewImage({ editKey, instanceId = editKey, la
   const handle = (mode: Mode, title: string, className: string, size: number) => <button type="button" aria-label={`${label} ${title}`} title={`${title} · 드래그 또는 방향키`} className={className} style={mode === 'move' ? undefined : { width: size, height: size, fontSize: size * .8 }} onFocus={() => editing?.select(instanceId, editKey)} onPointerDown={event => start(event, mode)} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end} onKeyDown={event => keyboard(event, mode)}>{mode === 'rotate' ? '↻' : null}</button>;
   return <>
     <img {...props} ref={image} draggable={false} data-preview-image={editKey} data-image-x={value.x} data-image-y={value.y} data-image-scale={value.scale} data-image-angle={value.angle} style={style} onLoad={event => { setLoaded(n => n + 1); props.onLoad?.(event); }}/>
-    {editing && geometry && createPortal(<div data-editor-only="true" className="builder-picture-ui">
+    {editing && interactive && geometry && createPortal(<div data-editor-only="true" className="builder-picture-ui">
       <div className="builder-picture-selection" data-image-selection={selected ? editKey : undefined} style={{ left: geometry.centerX - geometry.box.width * value.scale / 2, top: geometry.centerY - geometry.box.height * value.scale / 2, width: geometry.box.width * value.scale, height: geometry.box.height * value.scale, transform: `rotate(${value.angle}deg)` }}>
         {handle('move', '이동', 'builder-picture-move', 0)}
         {selected && <>{handle('resize', '크기 조절', 'builder-picture-resize', 16 / geometry.factor)}{handle('rotate', '회전', 'builder-picture-rotate', 23 / geometry.factor)}</>}
       </div>
-      {selected && <div className="builder-picture-tools" style={{ left: Math.max(3, Math.min(geometry.centerX, geometry.canvas.clientWidth - 130 / geometry.factor)), top: Math.max(3, geometry.centerY - geometry.box.height * value.scale / 2 - 34 / geometry.factor), fontSize: 11 / geometry.factor }}><span>{Math.round(value.angle)}°</span><button type="button" aria-label={`${label} 배치 초기화`} onClick={event => { event.stopPropagation(); editing.change(editKey); }}>배치 초기화</button></div>}
+      {(selected || tools) && <div className="builder-picture-tools" style={{ left: Math.max(3, Math.min(geometry.centerX, geometry.canvas.clientWidth - (tools ? 215 : 130) / geometry.factor)), top: Math.max(3, geometry.centerY - geometry.box.height * value.scale / 2 - 34 / geometry.factor), fontSize: 11 / geometry.factor }}><span>{Math.round(value.angle)}°</span><button type="button" aria-label={`${label} 배치 초기화`} onClick={event => { event.stopPropagation(); editing.change(editKey); }}>배치 초기화</button>{tools}</div>}
     </div>, geometry.canvas)}
   </>;
 }

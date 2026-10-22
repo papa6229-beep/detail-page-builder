@@ -670,6 +670,12 @@
 .builder-picture-tools button { border: 0; padding: 0; color: inherit; font: inherit; background: transparent; cursor: pointer; }
 .builder-picture-selection button:focus-visible { outline: 1px solid #b38a38; outline-offset: 2px; }
 .builder-workspace { scroll-padding-top: 48px; }
+.builder-option-tools { position: absolute; top: -27px; left: 8px; display: flex; align-items: center; gap: 6px; padding: 3px 5px; background: #24221c; border-radius: 4px; color: #d2c6a9; white-space: nowrap; font-size: 10px; z-index: 45; pointer-events: auto; }
+.builder-option-tools button { border: 0; padding: 3px 5px; color: inherit; background: transparent; border-radius: 3px; cursor: pointer; }
+.builder-option-tools button[aria-pressed=true] { color: #251d10; background: #dec58b; }
+.builder-option-tools button:disabled { opacity: .35; cursor: default; }
+.builder-option-tools span { padding: 0 4px; font-size: 9px; color: #aaa18a; }
+.builder-option-resize { display: block; width: 13px; height: 13px; margin: 0; padding: 0; border: 1px solid #765922; border-radius: 3px; background: #f1d292; cursor: nwse-resize; }
 .builder-brand-caption { display: flex; align-items: center; gap: 5px; }
 .builder-brand-caption > span:first-child { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .builder-history-controls { display: flex; gap: 6px; margin-left: auto; }

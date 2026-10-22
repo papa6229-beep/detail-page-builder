@@ -213,11 +213,11 @@ const Editor: React.FC<EditorProps> = ({ data, onChange, onGenerateAI, isLoading
   const addOption = () => {
     // 기본값: x=0, y=0, w=320, h=400 (적당한 크기)
     const newOption: OptionItem = { 
-        id: Date.now().toString(), 
+        id: crypto.randomUUID(),
         name: '', 
         image: null,
         x: 0, 
-        y: 0, 
+        y: data.options.length ? Math.max(...data.options.map(option => option.y + option.height)) + 36 : 0,
         width: 320, 
         height: 400 
     };

@@ -2,6 +2,7 @@ import { INITIAL_PRODUCT_DATA } from './constants';
 import type { ProductData } from './types';
 import type { ProjectMeta } from './documentStore';
 import { normalizeShadow } from './lab/shadow';
+import { isValidColorAdjustments, normalizeColorAdjustments } from './lab/colorAdjustments';
 
 const databaseName = 'detail-page-builder-workspace';
 let connection: Promise<IDBDatabase> | null = null;
@@ -53,7 +54,8 @@ export function normaliseDocument(input: unknown): ProductData {
   if (result.imageEdits) result.imageEdits = Object.fromEntries(Object.entries(result.imageEdits).map(([key, edit]) => {
     const shadow = edit.shadow;
     if (typeof shadow !== 'boolean' && (('enabled' in shadow && typeof shadow.enabled !== 'boolean') || ['opacity', 'offsetX', 'offsetY', 'blur', 'width', 'depth', 'angle'].some(field => field in shadow && (typeof shadow[field] !== 'number' || !Number.isFinite(shadow[field]))))) throw new Error('작업 파일의 그림자 설정이 올바르지 않습니다.');
-    return [key, { original: edit.original, tone: Math.max(0, Math.min(100, edit.tone)), shadow: normalizeShadow(shadow) }];
+    if (edit.color !== undefined && !isValidColorAdjustments(edit.color)) throw new Error('작업 파일의 레벨·커브 설정이 올바르지 않습니다.');
+    return [key, { original: edit.original, tone: Math.max(0, Math.min(100, edit.tone)), shadow: normalizeShadow(shadow), ...(edit.color ? { color: normalizeColorAdjustments(edit.color) } : {}) }];
   }));
   for (const key of ['packageLayout', 'thumbnailPackageLayout'] as const) if (result[key] !== undefined && !numbers(result[key], ['x', 'y', 'width', 'height'])) throw new Error('작업 파일의 패키지 배치가 올바르지 않습니다.');
   if (new Set(result.options.map(option => option.id)).size !== result.options.length || result.options.some(option => !numbers(option, ['x', 'y', 'width', 'height']))) throw new Error('작업 파일의 옵션 배치가 올바르지 않습니다.');

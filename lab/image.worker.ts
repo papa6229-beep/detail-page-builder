@@ -7,7 +7,7 @@ self.onmessage = (event) => {
   const message = event.data;
   if (message.kind === 'finish') {
     const start = performance.now();
-    void finishImage(message.blob, message.strength, message.shadow)
+    void finishImage(message.blob, message.strength, message.shadow, message.color)
       .then(blob => self.postMessage({ kind: 'finished', id: message.id, blob, ms: performance.now() - start }))
       .catch(error => self.postMessage({ kind: 'error', id: message.id, operation: 'finish', message: String(error?.message || error) }));
     return;

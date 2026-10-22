@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { DEFAULT_SHADOW, type ShadowSettings } from './shadow';
 import { ShadowPreview } from './ShadowPreview';
+import { ColorAdjustmentsPanel } from './ColorAdjustmentsPanel';
+import { normalizeColorAdjustments, type ColorAdjustments } from './colorAdjustments';
 import './style.css';
 
 const shadowControls: { key: keyof Omit<ShadowSettings, 'enabled'>; label: string; min: number; max: number; unit: string }[] = [
@@ -18,8 +20,8 @@ function useBlobUrl(blob: Blob | null) {
   return url;
 }
 
-export interface ImageProcessingResult { image: Blob; cutout: Blob; tone: number; shadow: ShadowSettings }
-export interface InitialProcessingImage { id: string; source: string; cutout?: Blob; tone?: number; shadow?: ShadowSettings }
+export interface ImageProcessingResult { image: Blob; cutout: Blob; tone: number; shadow: ShadowSettings; color: ColorAdjustments }
+export interface InitialProcessingImage { id: string; source: string; cutout?: Blob; tone?: number; shadow?: ShadowSettings; color?: ColorAdjustments }
 
 export function ImageProcessor({ initial, onApply, onRestore }: {
   initial?: InitialProcessingImage;
@@ -29,13 +31,14 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
   const [source, setSource] = useState<File | null>(null);
   const [cutout, setCutout] = useState<Blob | null>(null);
   const [finished, setFinished] = useState<Blob | null>(null);
-  const [toned, setToned] = useState<Blob | null>(null);
+  const [toned, setToned] = useState<{ blob: Blob; id: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [status, setStatus] = useState('사진을 넣고 테스트를 실행하세요.');
   const [error, setError] = useState('');
   const [dragging, setDragging] = useState(false);
   const [tone, setTone] = useState(45);
+  const [color, setColor] = useState(() => normalizeColorAdjustments());
   const [shadow, setShadow] = useState<ShadowSettings>({ ...DEFAULT_SHADOW });
   const [checker, setChecker] = useState(true);
   const [actualSize, setActualSize] = useState(false);
@@ -54,7 +57,7 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
     instance.onmessage = ({ data }) => {
       if (data.kind === 'finished') {
         if (data.id !== finishId.current) return;
-        setToned(data.blob); setFinishTime(data.ms); return;
+        setToned({ blob: data.blob, id: data.id }); setFinishTime(data.ms); return;
       }
       if (data.kind === 'error' && data.operation === 'finish') {
         if (data.id !== finishId.current) return;
@@ -81,6 +84,7 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
     const id = ++removeId.current; finishId.current++;
     setSource(null); setCutout(null); setFinished(null); setToned(null); setDimensions(''); setError('');
     setTone(initial.tone ?? 45); setShadow({ ...DEFAULT_SHADOW, ...initial.shadow });
+    setColor(normalizeColorAdjustments(initial.color));
     setChecker(false); setBusy(true); setFinishing(false); setRemovalTime(null); setFinishTime(null);
     setStatus('이미지를 준비하고 있습니다…');
     void fetch(initial.source).then(response => {
@@ -105,19 +109,22 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
     if (!cutout) return;
     const id = ++finishId.current;
     setFinishing(true);
-    setFinished(null); setToned(null);
+    setFinished(null);
     setStatus('톤과 그림자를 적용하고 있습니다…');
-    const timeout = setTimeout(() => worker.current?.postMessage({ kind: 'finish', id, blob: cutout, strength: tone / 100, shadow: false }), 100);
+    const timeout = setTimeout(() => worker.current?.postMessage({ kind: 'finish', id, blob: cutout, strength: tone / 100, shadow: false, color }), 100);
     return () => clearTimeout(timeout);
-  }, [cutout, tone]);
+  }, [cutout, tone, color]);
+  const changeColor = useCallback((value: ColorAdjustments) => { finishId.current++; setFinished(null); setColor(normalizeColorAdjustments(value)); if (cutout) setFinishing(true); }, [cutout]);
+  const changeTone = (value: number) => { finishId.current++; setFinished(null); setTone(value); if (cutout) setFinishing(true); };
 
   const changeShadow = useCallback((next: ShadowSettings) => {
     setShadow(next); setFinished(null);
     if (toned) { setFinishing(true); setStatus('그림자 조절 중 · 화면에 바로 반영됩니다.'); }
   }, [toned]);
   const completeExport = useCallback((blob: Blob) => {
-    setFinished(blob); setFinishing(false); setStatus('처리 완료 · 오른쪽 그림자를 드래그해 조절하세요.');
-  }, []);
+    if (!toned || toned.id !== finishId.current) return;
+    setFinished(blob); setFinishing(false); setStatus('처리 완료 · 미리보기에서 보정 결과를 확인하세요.');
+  }, [toned]);
   const previewError = useCallback((message: string) => { setError(message); setFinishing(false); }, []);
 
   const select = (files: FileList | null) => {
@@ -143,7 +150,7 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
     setApplying(true);
     try {
       if (restore) await onRestore?.();
-      else if (finished && cutout) await onApply?.({ image: finished, cutout, tone, shadow });
+      else if (finished && cutout) await onApply?.({ image: finished, cutout, tone, shadow, color });
     } catch (error) { setError(String(error?.message || error)); }
     finally { setApplying(false); }
   };
@@ -164,7 +171,7 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
     <div className="status" role="status"><span className={busy || finishing ? 'pulse' : ''}></span>{status}</div>
     {error && <div className="error" role="alert">{error}</div>}
     <section className="adjust" aria-label="후보정 설정">
-      <label className="tone">톤 보정 <input type="range" min="0" max="100" value={tone} onChange={e => setTone(Number(e.target.value))} disabled={busy} aria-label="톤 보정 강도"/><output>{tone}%</output></label>
+      <label className="tone">톤 보정 <input type="range" min="0" max="100" value={tone} onChange={e => changeTone(Number(e.target.value))} disabled={busy} aria-label="톤 보정 강도"/><output>{tone}%</output></label>
       <label><input type="checkbox" checked={checker} onChange={e => setChecker(e.target.checked)}/>체크 배경으로 보기</label>
       <label><input type="checkbox" checked={actualSize} onChange={e => setActualSize(e.target.checked)}/>원본 크기(100%)</label>
       <span className="hint">보정값을 바꿔도 누끼는 다시 계산하지 않습니다.</span>
@@ -176,16 +183,16 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
       </label>)}</div>
       <p>그림자 영역을 끌면 이동, 네모 손잡이는 크기, 둥근 ↻ 손잡이는 각도를 조절합니다. 이미지 밖으로 나간 그림자는 잘립니다.</p>
     </section>
-    <section className="comparison" aria-label="처리 결과 비교">
+    <div className="image-edit-workbench"><section className="comparison" aria-label="처리 결과 비교">
       {[
         { title: '원본', url: sourceUrl, note: '원본 파일 유지', download: '' },
         { title: '누끼 결과', url: cutout ? cutoutUrl : '', note: `${cold ? '세션 첫 실행 · ' : '세션 재실행 · '}${seconds(removalTime)}`, download: `${name}_cutout.png` },
         { title: '톤·그림자 적용', url: finished ? finishedUrl : '', note: `추가 보정 ${seconds(finishTime)}`, download: `${name}_finished.png` },
       ].map(item => <article key={item.title}><div className="panel-heading"><h2>{item.title}</h2>{item.download && item.url && <a href={item.url} download={item.download}>PNG 저장 ↗</a>}</div><div className={`image-stage ${checker ? 'checker' : ''} ${actualSize ? 'native-size' : ''}`}>
-        {item.title === '톤·그림자 적용' && toned ? <ShadowPreview blob={toned} settings={shadow} actualSize={actualSize} onChange={changeShadow} onExport={completeExport} onError={previewError}/> : item.url ? <img src={item.url} alt={item.title} onLoad={item.title === '원본' ? e => setDimensions(`${e.currentTarget.naturalWidth} × ${e.currentTarget.naturalHeight}`) : undefined}/> : <div className="empty">{item.title === '원본' ? '원본 사진을 넣어주세요' : busy ? '이미지 처리 중…' : '실행 후 결과가 표시됩니다'}</div>}
+        {item.title === '톤·그림자 적용' && toned ? <ShadowPreview blob={toned.blob} settings={shadow} actualSize={actualSize} onChange={changeShadow} onExport={completeExport} onError={previewError}/> : item.url ? <img src={item.url} alt={item.title} onLoad={item.title === '원본' ? e => setDimensions(`${e.currentTarget.naturalWidth} × ${e.currentTarget.naturalHeight}`) : undefined}/> : <div className="empty">{item.title === '원본' ? '원본 사진을 넣어주세요' : busy ? '이미지 처리 중…' : '실행 후 결과가 표시됩니다'}</div>}
       </div><footer>{item.url ? item.note : '—'}</footer></article>)}
-    </section>
-    <p className="footnote">누끼는 가장자리와 제품의 작은 부품을 확대해 확인하세요. 톤 보정은 밝기 중심으로 약하게 적용하며, 원본 해상도와 비율을 유지합니다.</p>
+    </section><ColorAdjustmentsPanel value={color} blob={cutout} disabled={busy || !cutout || applying} onChange={changeColor}/></div>
+    <p className="footnote">누끼는 가장자리와 작은 부품을 확대해 확인하세요. 기본 톤은 약하게, 레벨·커브는 설정한 값대로 적용합니다. 원본 해상도·비율·투명도는 유지합니다.</p>
     {initial && <div className="apply-bar"><button type="button" className="reset" onClick={() => void commit(true)} disabled={applying}>원본 사용</button><button type="button" className="reset" onClick={run} disabled={!source || busy || applying}>다시 처리</button><button type="button" className="primary" data-image-apply disabled={!finished || !cutout || busy || finishing || applying} onClick={() => void commit()}>{applying ? '적용 중…' : '이 이미지 적용'}</button></div>}
   </main></div>;
 }

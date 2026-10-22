@@ -1,7 +1,8 @@
 import { drawShadow, findShadowBounds, normalizeShadow, type ShadowSettings } from './shadow';
+import { applyColorAdjustments, type ColorAdjustments } from './colorAdjustments';
 
-/** Luminance-only, deliberately mild correction. Source bytes remain separate. */
-export async function finishImage(blob: Blob, strength: number, shadow: boolean | ShadowSettings): Promise<Blob> {
+/** Mild automatic luminance followed by the user's levels/curves. Source and alpha remain separate. */
+export async function finishImage(blob: Blob, strength: number, shadow: boolean | ShadowSettings, color?: ColorAdjustments): Promise<Blob> {
   const image = await createImageBitmap(blob);
   try {
     const { width, height } = image;
@@ -39,6 +40,7 @@ export async function finishImage(blob: Blob, strength: number, shadow: boolean 
       pixels.data[i + 1] = Math.round(g * gain);
       pixels.data[i + 2] = Math.round(b * gain);
     }
+    applyColorAdjustments(pixels.data, color);
     ctx.putImageData(pixels, 0, 0);
     const settings = normalizeShadow(shadow);
     const bounds = settings.enabled && settings.opacity > 0 ? findShadowBounds(pixels.data, width, height) : null;

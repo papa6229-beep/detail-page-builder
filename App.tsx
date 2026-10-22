@@ -348,7 +348,7 @@ const App: React.FC = () => {
     id: string,
     layout: { x: number; y: number; width: number; height: number },
   ) => {
-    setData((prev) => ({
+    store.edit((prev) => ({
       ...prev,
       options: prev.options.map((opt) =>
         opt.id === id ? { ...opt, ...layout } : opt,

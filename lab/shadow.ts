@@ -48,8 +48,11 @@ export function createShadowMask(source: CanvasImageSource, bounds: ProductBound
       edge = y; coverage = Math.max(coverage, alpha);
     }
     if (edge < 0) continue;
-    const proximity = Math.exp(-(height - 1 - edge) / Math.max(1, height * .22));
-    const alpha = 255 * Math.sqrt(coverage / 255) * proximity;
+    // A translucent body can sit just above a lower opaque base. Avoid multiplying
+    // two severe discounts there: it still needs a visible, tight contact edge.
+    // Fully transparent columns remain empty, and opaque floor contacts keep 1:1 strength.
+    const proximity = Math.exp(-(height - 1 - edge) / Math.max(1, height * .5));
+    const alpha = 255 * Math.pow(coverage / 255, .3) * proximity;
     for (let y = edge; y <= Math.min(contact.height - 1, edge + padding); y++) {
       const fade = 1 - (y - edge) / (padding + 1);
       footprint.data[(y * width + x) * 4 + 3] = Math.round(alpha * fade);

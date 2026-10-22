@@ -2,9 +2,11 @@ import type { ProductData } from './types';
 import type { SetStateAction } from 'react';
 
 export interface ProjectMeta { id: string; name: string; customName: string; createdAt: number; updatedAt: number; imageCount: number }
-type Layout = Pick<ProductData, 'previewImageTransforms' | 'productFraming'>;
+type OptionLayout = Pick<ProductData['options'][number], 'x' | 'y' | 'width' | 'height'>;
+type Layout = Pick<ProductData, 'previewImageTransforms' | 'productFraming'> & { optionLayouts: Record<string, OptionLayout> };
 interface Snapshot { data: ProductData; project: ProjectMeta; canUndo: boolean; canRedo: boolean; imageGesture: boolean }
-const layout = (data: ProductData): Layout => ({ previewImageTransforms: data.previewImageTransforms ?? {}, productFraming: data.productFraming ?? {} });
+const layout = (data: ProductData): Layout => ({ previewImageTransforms: data.previewImageTransforms ?? {}, productFraming: data.productFraming ?? {}, optionLayouts: Object.fromEntries(data.options.map(({ id, x, y, width, height }) => [id, { x, y, width, height }])) });
+const applyLayout = (data: ProductData, value: Layout): ProductData => ({ ...data, previewImageTransforms: value.previewImageTransforms, productFraming: value.productFraming, options: data.options.map(option => ({ ...option, ...value.optionLayouts[option.id] })) });
 const equal = (a: Layout, b: Layout) => JSON.stringify(a) === JSON.stringify(b);
 const sources = (data: ProductData) => [data.mainImage, data.thumbnailImage, data.packageImage, data.featureImage, data.point1Image1, data.point1Image2, data.point1Image3, data.point2Image1, data.point2Image2, data.point2Image3, data.sizeImage, data.videoInsertImage, data.watermarkImage, ...data.options.flatMap(option => [option.id, option.image])];
 
@@ -43,11 +45,11 @@ export class BuilderDocumentStore {
   };
   undo = () => {
     this.endImageEdit(); const entry = this.past.pop(); if (!entry) return;
-    this.future.push(entry); this.snapshot = { ...this.snapshot, data: { ...this.snapshot.data, ...entry.before } }; this.emit();
+    this.future.push(entry); this.snapshot = { ...this.snapshot, data: applyLayout(this.snapshot.data, entry.before) }; this.emit();
   };
   redo = () => {
     this.endImageEdit(); const entry = this.future.pop(); if (!entry) return;
-    this.past.push(entry); this.snapshot = { ...this.snapshot, data: { ...this.snapshot.data, ...entry.after } }; this.emit();
+    this.past.push(entry); this.snapshot = { ...this.snapshot, data: applyLayout(this.snapshot.data, entry.after) }; this.emit();
   };
   replaceProject = (project: ProjectMeta, data: ProductData) => {
     this.past = []; this.future = []; this.transaction = null;

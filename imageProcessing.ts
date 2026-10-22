@@ -1,9 +1,10 @@
 import { ImageType, type ProductData } from './types';
 import type { ShadowSettings } from './lab/shadow';
+import type { ColorAdjustments } from './lab/colorAdjustments';
 import { clearChangedProductFraming } from './productFraming';
 import { clearChangedPreviewTransforms } from './previewImageTransforms';
 
-export interface SavedImageEdit { original: string; tone: number; shadow: ShadowSettings }
+export interface SavedImageEdit { original: string; tone: number; shadow: ShadowSettings; color?: ColorAdjustments }
 export interface ImageSlot { key: string; label: string; image: string }
 const labels: Record<ImageType, string> = {
   mainImage: '메인 이미지', packageImage: '패키지 이미지', featureImage: '핵심 특징',
