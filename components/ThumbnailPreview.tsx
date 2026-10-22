@@ -12,10 +12,11 @@ interface ThumbnailPreviewProps {
   height: number;
   hidePackage?: boolean;
   externalScale?: number; // App에서 축소해서 보여줄 때의 비율 (Rnd 드래그 보정용)
+  packagePhotoEditing?: boolean;
   onLayoutChange?: (layout: { x: number, y: number, width: number, height: number }) => void;
 }
 
-const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ data, width, height, hidePackage, externalScale = 1, onLayoutChange, onProductFramingChange }, ref) => {
+const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ data, width, height, hidePackage, externalScale = 1, packagePhotoEditing = false, onLayoutChange, onProductFramingChange }, ref) => {
   const editing = React.useContext(PreviewImageEditingContext);
   const image = data.thumbnailImage || data.mainImage;
 
@@ -38,7 +39,7 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
     <div 
       ref={ref}
       data-image-canvas={`thumbnail-${width}`}
-      style={{ width: `${width}px`, height: `${height}px` }}
+      style={{ width: `${width}px`, height: `${height}px`, position: 'relative', overflow: 'clip', boxSizing: 'border-box', borderWidth: 1, borderStyle: 'solid' }}
       className="bg-white relative overflow-hidden flex items-center justify-center shrink-0 border border-gray-200 shadow-[var(--shadow-sm)] transition-all duration-200 ease-out hover:shadow-[var(--shadow-md)]"
     >
       {/* 1. 이미지 영역 (Background Layer) */}
@@ -121,7 +122,15 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
       {/* 3. 패키지 이미지 오버레이 (Draggable) */}
       {(!hidePackage && data.packageImage && (data.isPackageImageEnabled ?? true)) && (
         <Rnd
-          disableDragging={Boolean(editing)} enableResizing={editing ? false : undefined}
+          data-thumbnail-package="true" tabIndex={-1}
+          disableDragging={packagePhotoEditing} enableResizing={packagePhotoEditing ? false : undefined}
+          style={{ zIndex: editing && !packagePhotoEditing ? 50 : 20 }}
+          cancel=".builder-option-resize"
+          minWidth={30 * scale} minHeight={36 * scale}
+          onDragStart={event => { (event.target as HTMLElement).closest<HTMLElement>('[data-thumbnail-package]')?.focus({ preventScroll: true }); editing?.beginImageEdit?.(); }}
+          onResizeStart={() => editing?.beginImageEdit?.()}
+          resizeHandleStyles={{ bottomRight: { right: 0, bottom: 0, width: 13 / externalScale, height: 13 / externalScale } }}
+          resizeHandleComponent={{ bottomRight: <button type="button" data-editor-only="true" className="builder-option-resize" style={{ width: 13 / externalScale, height: 13 / externalScale }} aria-label={`썸네일 ${width} 패키지 박스 크기 조절`} onKeyDown={event => { if (!event.key.startsWith('Arrow')) return; event.preventDefault(); const step = event.shiftKey ? 10 : 1, delta = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? step : -step, nextWidth = Math.max(30, baseLayout.width + delta); onLayoutChange?.({ ...baseLayout, width: nextWidth, height: nextWidth * baseLayout.height / baseLayout.width }); }}/> }}
           scale={externalScale}
           size={{ width: currentLayout.width, height: currentLayout.height }}
           position={{ x: currentLayout.x, y: currentLayout.y }}
@@ -134,6 +143,7 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
                       height: currentLayout.height / scale
                   });
               }
+              editing?.endImageEdit?.();
           }}
           onResizeStop={(e, direction, ref, delta, position) => {
               if (onLayoutChange) {
@@ -144,12 +154,13 @@ const ThumbnailPreview = forwardRef<HTMLDivElement, ThumbnailPreviewProps>(({ da
                       y: position.y / scale
                   });
               }
+              editing?.endImageEdit?.();
           }}
           className="group z-20"
           lockAspectRatio={true} // 이미지 비율 유지
         >
              <div className="w-full h-full relative">
-                <EditablePreviewImage editKey="thumbnailPackage" instanceId={`thumbnail-package-${width}`} label={`썸네일 ${width} 패키지`}
+                <EditablePreviewImage interactive={packagePhotoEditing} editKey="thumbnailPackage" instanceId={`thumbnail-package-${width}`} label={`썸네일 ${width} 패키지`}
                     src={data.packageImage}
                     className="w-full h-full object-contain pointer-events-none" // pointer-events-none to let Rnd handle drag
                     alt="Package Overlay"

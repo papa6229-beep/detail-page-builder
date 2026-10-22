@@ -73,6 +73,8 @@ interface PreviewProps {
 const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayoutChange, onPackageLayoutChange, onWatermarkLayoutChange, onSectionSpacingChange, onProductFramingChange }, ref) => {
   const editing = React.useContext(PreviewImageEditingContext);
   const [optionPhotoEdit, setOptionPhotoEdit] = React.useState<string | null>(null);
+  const [packagePhotoEdit, setPackagePhotoEdit] = React.useState(false);
+  React.useEffect(() => { setPackagePhotoEdit(false); }, [data.packageImage]);
   const imageOverflow = (key: string): React.CSSProperties | undefined => hasImageTransform(data.previewImageTransforms?.[key]) ? { overflow: 'visible', zIndex: 1 } : undefined;
   const spacingStyle = (key: SectionSpacingKey) => ({ paddingBottom: getSectionSpacing(data, key) });
   const sectionEnd = (key: SectionSpacingKey) => (
@@ -273,14 +275,21 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
         <section id="preview-package" className="pb-16 px-10 flex flex-col items-center bg-white/80 backdrop-blur-sm relative"
              style={{ 
                 ...spacingStyle('package'),
+                position: 'relative',
                 // 패키지 이미지 위치에 따라 섹션 높이 자동 조절
                 minHeight: (data.packageLayout?.y || 0) + (data.packageLayout?.height || 550) + 150 + getSectionSpacing(data, 'package') - SECTION_SPACING.package.defaultValue
              }}
         >
              {/* Rnd 적용 */}
-             <div className="absolute inset-0 flex justify-center">
+             <div className="absolute inset-0 flex justify-center" style={{ position: 'absolute', inset: 0 }}>
                 <Rnd
-                   disableDragging={Boolean(editing)} enableResizing={editing ? false : undefined}
+                   data-package-card="true" tabIndex={-1}
+                   disableDragging={packagePhotoEdit} enableResizing={packagePhotoEdit ? false : undefined}
+                   cancel=".builder-option-tools, .builder-option-resize"
+                   minWidth={120} minHeight={140}
+                   onDragStart={event => { (event.target as HTMLElement).closest<HTMLElement>('[data-package-card]')?.focus({ preventScroll: true }); editing?.beginImageEdit?.(); }}
+                   onResizeStart={() => editing?.beginImageEdit?.()}
+                   resizeHandleComponent={{ bottomRight: <button type="button" data-editor-only="true" className="builder-option-resize" aria-label="패키지 박스 크기 조절" title="드래그 또는 방향키로 크기 조절" onKeyDown={event => { if (!event.key.startsWith('Arrow')) return; event.preventDefault(); const step = event.shiftKey ? 10 : 1; onPackageLayoutChange({ x: data.packageLayout?.x || 0, y: data.packageLayout?.y || 0, width: Math.max(120, (data.packageLayout?.width || 400) + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0)), height: Math.max(140, (data.packageLayout?.height || 550) + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0)) }); }}/> }}
                    size={{ width: data.packageLayout?.width || 400, height: data.packageLayout?.height || 550 }}
                    position={{ x: data.packageLayout?.x || 0, y: data.packageLayout?.y || 0 }}
                    onDragStop={(e, d) => {
@@ -290,6 +299,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                            width: data.packageLayout?.width || 400, 
                            height: data.packageLayout?.height || 550 
                        });
+                       editing?.endImageEdit?.();
                    }}
                    onResizeStop={(e, direction, ref, delta, position) => {
                        onPackageLayoutChange({
@@ -297,13 +307,15 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(({ data, onOptionLayout
                            height: parseInt(ref.style.height),
                            ...position
                        });
+                       editing?.endImageEdit?.();
                    }}
                    className="group z-10" // z-index 확보
                 >
+                    {editing && !packagePhotoEdit && <div className="builder-option-tools builder-package-tools" data-editor-only="true"><button type="button" aria-label="패키지 박스 편집" aria-pressed={true} onClick={() => editing.select(null)}>박스 편집</button><button type="button" aria-label="패키지 사진 편집" disabled={!packageImage} onClick={() => { setPackagePhotoEdit(true); editing.select('packageImage', 'packageImage'); }}>사진 편집</button><span>박스를 끌거나 모서리 조절</span></div>}
                     <div className="w-full h-full flex flex-col p-2 border-2 border-transparent group-hover:border-[#CA8A04] group-hover:bg-[#CA8A04]/5 rounded-xl transition-all select-none">
-                        <div style={imageOverflow('packageImage')} className="w-full flex-1 bg-white/80 shadow-[var(--shadow-xl)] rounded-xl overflow-hidden border border-white/40 flex items-center justify-center relative pointer-events-none mb-4 transition-all duration-200 ease-out backdrop-blur-md">
+                        <div style={imageOverflow('packageImage')} className="w-full flex-1 min-h-0 bg-white/80 shadow-[var(--shadow-xl)] rounded-xl overflow-hidden border border-white/40 flex items-center justify-center relative pointer-events-none mb-4 transition-all duration-200 ease-out backdrop-blur-md">
                             {packageImage ? (
-                            <EditablePreviewImage editKey="packageImage" label="패키지 이미지"
+                            <EditablePreviewImage interactive={packagePhotoEdit} tools={editing && packagePhotoEdit ? <button type="button" aria-label="패키지 박스 편집" onClick={() => { setPackagePhotoEdit(false); editing.select(null); }}>박스 편집</button> : undefined} editKey="packageImage" label="패키지 이미지"
                                 src={packageImage} 
                                 className="block w-full h-full object-contain" 
                                 alt="Package" 

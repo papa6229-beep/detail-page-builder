@@ -27,8 +27,12 @@ const RenderWatermark = ({ data, onWatermarkLayoutChange, targetKey, containerWi
   // 초기 위치/크기 설정 (중앙 정렬)
   const defaultWidth = 100;
   const defaultHeight = 100; // 비율에 따라 자동 조절됨
-  const x = settings.x || (containerWidth ? (containerWidth - defaultWidth) / 2 : 0);
-  const y = settings.y || (containerHeight ? (containerHeight - defaultHeight) / 2 : 0);
+  const x = settings.x ?? (containerWidth ? (containerWidth - defaultWidth) / 2 : 0);
+  const y = settings.y ?? (containerHeight ? (containerHeight - defaultHeight) / 2 : 0);
+
+  if (editing) return <div style={{ position: 'absolute', left: x, top: y, width: settings.width || defaultWidth, height: settings.height || defaultHeight, zIndex: 50, pointerEvents: 'none' }}>
+    <EditablePreviewImage editKey={`watermark:${targetKey}`} label={label} src={data.watermarkImage} className="w-full h-full object-contain pointer-events-none select-none" alt="watermark"/>
+  </div>;
 
   return (
       <Rnd

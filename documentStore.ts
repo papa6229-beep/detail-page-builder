@@ -3,10 +3,10 @@ import type { SetStateAction } from 'react';
 
 export interface ProjectMeta { id: string; name: string; customName: string; createdAt: number; updatedAt: number; imageCount: number }
 type OptionLayout = Pick<ProductData['options'][number], 'x' | 'y' | 'width' | 'height'>;
-type Layout = Pick<ProductData, 'previewImageTransforms' | 'productFraming'> & { optionLayouts: Record<string, OptionLayout> };
+type Layout = Pick<ProductData, 'previewImageTransforms' | 'productFraming' | 'packageLayout' | 'thumbnailPackageLayout'> & { optionLayouts: Record<string, OptionLayout> };
 interface Snapshot { data: ProductData; project: ProjectMeta; canUndo: boolean; canRedo: boolean; imageGesture: boolean }
-const layout = (data: ProductData): Layout => ({ previewImageTransforms: data.previewImageTransforms ?? {}, productFraming: data.productFraming ?? {}, optionLayouts: Object.fromEntries(data.options.map(({ id, x, y, width, height }) => [id, { x, y, width, height }])) });
-const applyLayout = (data: ProductData, value: Layout): ProductData => ({ ...data, previewImageTransforms: value.previewImageTransforms, productFraming: value.productFraming, options: data.options.map(option => ({ ...option, ...value.optionLayouts[option.id] })) });
+const layout = (data: ProductData): Layout => ({ previewImageTransforms: data.previewImageTransforms ?? {}, productFraming: data.productFraming ?? {}, packageLayout: data.packageLayout, thumbnailPackageLayout: data.thumbnailPackageLayout, optionLayouts: Object.fromEntries(data.options.map(({ id, x, y, width, height }) => [id, { x, y, width, height }])) });
+const applyLayout = (data: ProductData, value: Layout): ProductData => ({ ...data, previewImageTransforms: value.previewImageTransforms, productFraming: value.productFraming, packageLayout: value.packageLayout, thumbnailPackageLayout: value.thumbnailPackageLayout, options: data.options.map(option => ({ ...option, ...value.optionLayouts[option.id] })) });
 const equal = (a: Layout, b: Layout) => JSON.stringify(a) === JSON.stringify(b);
 const sources = (data: ProductData) => [data.mainImage, data.thumbnailImage, data.packageImage, data.featureImage, data.point1Image1, data.point1Image2, data.point1Image3, data.point2Image1, data.point2Image2, data.point2Image3, data.sizeImage, data.videoInsertImage, data.watermarkImage, ...data.options.flatMap(option => [option.id, option.image])];
 

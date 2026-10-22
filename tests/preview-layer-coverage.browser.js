@@ -14,10 +14,12 @@ async (page) => {
     await move.click(); await page.getByRole('button', { name: `${label} 회전`, exact: true }).focus(); await page.keyboard.press('Shift+ArrowRight');
     assert(await page.locator(selector).getAttribute('data-image-angle') === '5', `${label} must rotate independently`);
   };
+  await page.getByRole('button', { name: '패키지 사진 편집', exact: true }).click();
   await check('패키지 이미지', '#preview-package img[alt="Package"]');
   await page.getByRole('button', { name: '옵션 1 사진 편집', exact: true }).click();
   await check('옵션 1 이미지', '#preview-option img[alt=""]');
   await check('특징 이미지', '#preview-feature img[alt="Feature"]');
+  await page.getByRole('button', { name: '썸네일 500 패키지 사진 편집', exact: true }).click();
   await check('썸네일 500 패키지', '[data-image-canvas="thumbnail-500"] img[alt="Package Overlay"]');
   await page.getByRole('group', { name: 'Main Image 이미지 첨부', exact: true }).getByRole('button', { name: '워터마크 OFF', exact: true }).click();
   await check('메인 워터마크', '#preview-main img[alt="watermark"]');

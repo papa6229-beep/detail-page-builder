@@ -6,7 +6,7 @@ async (page) => {
     await p.goto('http://127.0.0.1:3000/');
     const home = p.getByRole('main', { name: '빌더 작업 홈', exact: true });
     await home.waitFor();
-    assert(await home.getByRole('heading', { name: 'Detail Page Builder', exact: true }).count() === 1 && await home.getByText('Version 3.2.1', { exact: true }).count() === 1, 'Home must show the English application name and release version');
+    assert(await home.getByRole('heading', { name: 'Detail Page Builder', exact: true }).count() === 1 && await home.getByText('Version 3.2.2', { exact: true }).count() === 1, 'Home must show the English application name and release version');
     assert(await home.locator('.builder-home-art').count() === 0 && !(await home.textContent()).includes('상품의 매력을'), 'Home illustration and previous marketing headline must be removed');
     await p.getByRole('button', { name: '작업 시작하기', exact: true }).click();
     const name = p.getByPlaceholder('예: 바나나 오나홀', { exact: true });

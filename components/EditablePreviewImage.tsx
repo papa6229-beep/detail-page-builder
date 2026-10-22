@@ -19,7 +19,7 @@ export default function EditablePreviewImage({ editKey, instanceId = editKey, la
   const image = useRef<HTMLImageElement>(null);
   const [geometry, setGeometry] = useState<Geometry | null>(null);
   const [loaded, setLoaded] = useState(0);
-  const value = normalizeImageTransform(editing?.transforms[editKey]);
+  const value = normalizeImageTransform(editing?.transforms[editKey], editKey);
   const selected = editing?.selected === instanceId;
   const drag = useRef<{ id: number; mode: Mode; x: number; y: number; value: PreviewImageTransform; centerX: number; centerY: number; radius: number; angle: number; geometry: Geometry } | null>(null);
 
@@ -78,7 +78,7 @@ export default function EditablePreviewImage({ editKey, instanceId = editKey, la
     if (current.mode === 'move') { next.x += (event.clientX - current.x) / g.factor / g.box.width * 100; next.y += (event.clientY - current.y) / g.factor / g.box.height * 100; }
     if (current.mode === 'resize') next.scale *= Math.hypot(event.clientX - current.centerX, event.clientY - current.centerY) / current.radius;
     if (current.mode === 'rotate') { next.angle += (Math.atan2(event.clientY - current.centerY, event.clientX - current.centerX) - current.angle) * 180 / Math.PI; if (event.shiftKey) next.angle = Math.round(next.angle / 15) * 15; }
-    editing.change(editKey, normalizeImageTransform(next));
+    editing.change(editKey, normalizeImageTransform(next, editKey));
   };
   const end = (event: React.PointerEvent<HTMLButtonElement>) => { if (drag.current?.id !== event.pointerId) return; drag.current = null; editing?.endImageEdit?.(); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); };
   const keyboard = (event: React.KeyboardEvent<HTMLButtonElement>, mode: Mode) => {
@@ -88,7 +88,7 @@ export default function EditablePreviewImage({ editKey, instanceId = editKey, la
     else if (mode === 'resize') next.scale += delta * .02;
     else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') next.x += delta;
     else next.y += delta;
-    editing.change(editKey, normalizeImageTransform(next));
+    editing.change(editKey, normalizeImageTransform(next, editKey));
   };
   const handle = (mode: Mode, title: string, className: string, size: number) => <button type="button" aria-label={`${label} ${title}`} title={`${title} · 드래그 또는 방향키`} className={className} style={mode === 'move' ? undefined : { width: size, height: size, fontSize: size * .8 }} onFocus={() => editing?.select(instanceId, editKey)} onPointerDown={event => start(event, mode)} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end} onKeyDown={event => keyboard(event, mode)}>{mode === 'rotate' ? '↻' : null}</button>;
   return <>

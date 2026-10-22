@@ -30,6 +30,8 @@ const App: React.FC = () => {
   const data = snapshot.data, setData = store.setData;
   const workspace = useProjectWorkspace(store, snapshot);
   const [projectManagerOpen, setProjectManagerOpen] = useState(false);
+  const [thumbnailPackagePhotoEdit, setThumbnailPackagePhotoEdit] = useState<number | null>(null);
+  useEffect(() => { setThumbnailPackagePhotoEdit(null); }, [data.packageImage]);
   const [editorOpen, setEditorOpen] = useState(() => { try { return sessionStorage.getItem('builder_editor_open') === '1'; } catch { return false; } });
   const startEditor = () => { try { sessionStorage.setItem('builder_editor_open', '1'); } catch {} setEditorOpen(true); };
   const showHome = async () => { try { await workspace.saveNow(); } catch {} try { sessionStorage.removeItem('builder_editor_open'); } catch {} setEditorOpen(false); };
@@ -39,7 +41,7 @@ const App: React.FC = () => {
   const [selectedImageKey, setSelectedImageKey] = useState<string | null>(null);
   const handlePreviewTransform = (key: string, value?: PreviewImageTransform) => store.edit(previous => {
     const previewImageTransforms = { ...previous.previewImageTransforms };
-    if (value) previewImageTransforms[key] = normalizeImageTransform(value); else delete previewImageTransforms[key];
+    if (value) previewImageTransforms[key] = normalizeImageTransform(value, key); else delete previewImageTransforms[key];
     return { ...previous, previewImageTransforms };
   });
   const handleFitImage = async (target: FramingTarget) => {
@@ -93,7 +95,7 @@ const App: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState("처리 중입니다..."); // ✅ 로딩 메시지 상태 추가
 
   const detailRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { cutoutCache.current.clear(); setSelectedImage(null); setSelectedImageKey(null); setImageSession(null); setReviewOpen(false); }, [snapshot.project.id]);
+  useEffect(() => { cutoutCache.current.clear(); setSelectedImage(null); setSelectedImageKey(null); setImageSession(null); setReviewOpen(false); setThumbnailPackagePhotoEdit(null); }, [snapshot.project.id]);
   useEffect(() => { if (workspace.notice) setImageMessage(workspace.notice); }, [workspace.notice]);
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
@@ -370,7 +372,7 @@ const App: React.FC = () => {
     width: number;
     height: number;
   }) => {
-    setData((prev) => ({
+    store.edit((prev) => ({
       ...prev,
       packageLayout: layout,
     }));
@@ -383,7 +385,7 @@ const App: React.FC = () => {
     width: number;
     height: number;
   }) => {
-    setData((prev) => ({
+    store.edit((prev) => ({
       ...prev,
       thumbnailPackageLayout: layout,
     }));
@@ -605,6 +607,7 @@ const App: React.FC = () => {
                             height={preset.height}
                             hidePackage={preset.hidePackage}
                             externalScale={200 / preset.width}
+                            packagePhotoEditing={thumbnailPackagePhotoEdit === i}
                             onLayoutChange={handleThumbnailPackageLayoutChange}
                             onProductFramingChange={frame => handleProductFraming('thumbnail', frame)}
                             ref={(el) => (thumbnailRefs.current[i] = el)}
@@ -615,6 +618,7 @@ const App: React.FC = () => {
                         <span className="builder-thumbnail-size">
                           {preset.label}
                         </span>
+                        {!preset.hidePackage && data.packageImage && (data.isPackageImageEnabled ?? true) && <div className="builder-thumbnail-package-tools"><button type="button" className="builder-button builder-button-small" aria-label={`썸네일 ${preset.width} 패키지 박스 편집`} aria-pressed={thumbnailPackagePhotoEdit !== i} onClick={() => { setThumbnailPackagePhotoEdit(null); setSelectedImage(null); }}>박스 편집</button><button type="button" className="builder-button builder-button-small" aria-label={`썸네일 ${preset.width} 패키지 사진 편집`} aria-pressed={thumbnailPackagePhotoEdit === i} onClick={() => { setThumbnailPackagePhotoEdit(i); setSelectedImage(`thumbnail-package-${preset.width}`); setSelectedImageKey('thumbnailPackage'); }}>사진 편집</button></div>}
                         <button
                           onClick={() =>
                             downloadSingleThumbnail(i, preset.label)

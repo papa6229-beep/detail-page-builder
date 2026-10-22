@@ -1,0 +1,57 @@
+async (page) => {
+  const context = await page.context().browser().newContext({ viewport: { width: 1440, height: 1050 }, acceptDownloads: true });
+  await context.addInitScript(() => sessionStorage.setItem('builder_editor_open', '1'));
+  const p = await context.newPage(); p.setDefaultTimeout(8000);
+  try {
+    await p.goto('http://127.0.0.1:3000/');
+    const saved = () => p.getByRole('status', { name: '자동 저장 상태', exact: true }).filter({ hasText: '저장됨' }).waitFor(); await saved();
+    const assert = (value, message) => { if (!value) throw new Error(message); };
+    await p.locator('aside input[type=checkbox]').locator('..').click();
+    const fixture = await p.evaluate(() => { const c=document.createElement('canvas');c.width=160;c.height=200;const x=c.getContext('2d');x.fillStyle='#9f3858';x.fillRect(15,20,130,160);return c.toDataURL().split(',')[1]; });
+    for(const label of ['Main Image','Package Image']) await p.getByRole('group',{name:`${label} 이미지 첨부`,exact:true}).locator('input[type=file]').setInputFiles({name:'package.png',mimeType:'image/png',buffer:Buffer.from(fixture,'base64')});
+    const card = p.locator('#preview-package img[alt="Package"]').locator('xpath=ancestor::div[contains(@class,"react-draggable")]');
+    const drag = async (target, dx, dy) => { await target.scrollIntoViewIfNeeded();const b=await target.boundingBox();await p.mouse.move(b.x+b.width/2,b.y+b.height/2);await p.mouse.down();await p.mouse.move(b.x+b.width/2+dx,b.y+b.height/2+dy,{steps:5});await p.mouse.up(); };
+    await card.scrollIntoViewIfNeeded(); const before = await card.boundingBox();
+    await drag(card,50,25); const moved = await card.boundingBox();
+    assert(Math.abs(moved.x-before.x-50)<3 && Math.abs(moved.y-before.y-25)<3,'Package whole box must move with the pointer');
+    await p.getByRole('button',{name:'되돌리기',exact:true}).click();
+    assert(Math.abs((await card.boundingBox()).x-before.x)<2,'Package box movement must undo in one step');
+    await p.getByRole('button',{name:'다시 실행',exact:true}).click();
+    const handle=card.getByRole('button',{name:'패키지 박스 크기 조절',exact:true});
+    await handle.scrollIntoViewIfNeeded();const h=await handle.boundingBox();await p.mouse.move(h.x+h.width/2,h.y+h.height/2);await p.mouse.down();await p.mouse.move(h.x+h.width/2+40,h.y+h.height/2+30,{steps:5});await p.mouse.up();
+    assert((await card.boundingBox()).width>moved.width+30,'Package whole box must resize');
+    await p.getByRole('button',{name:'패키지 사진 편집',exact:true}).click();
+    const move=p.getByRole('button',{name:'패키지 이미지 이동',exact:true});await move.click();
+    await p.getByRole('button',{name:'패키지 이미지 회전',exact:true}).focus();await p.keyboard.press('ArrowRight');
+    assert(await card.locator('img[alt="Package"]').getAttribute('data-image-angle')==='1','Package photo-only editing must remain available');
+    await p.getByRole('button',{name:'패키지 박스 편집',exact:true}).click();
+    assert(await move.count()===0,'Photo overlay must not intercept box dragging in box mode');
+    await saved();const geometry=await card.evaluate(e=>({width:e.offsetWidth,height:e.offsetHeight,transform:e.style.transform}));
+    await p.reload();await saved();
+    assert(JSON.stringify(await card.evaluate(e=>({width:e.offsetWidth,height:e.offsetHeight,transform:e.style.transform})))===JSON.stringify(geometry),'Package geometry must survive reload without shifting');
+    assert(await card.locator('img[alt="Package"]').getAttribute('data-image-angle')==='1','Package photo transform must survive reload');
+    const thumb=p.locator('[data-image-canvas="thumbnail-500"] [data-thumbnail-package]');
+    await thumb.scrollIntoViewIfNeeded();const tb=await thumb.boundingBox();await drag(thumb,-15,-10);const tm=await thumb.boundingBox();
+    assert(Math.abs(tm.x-tb.x+15)<3 && Math.abs(tm.y-tb.y+10)<3,'Scaled thumbnail package must move at pointer speed');
+    await p.getByRole('button',{name:'되돌리기',exact:true}).click();assert(Math.abs((await thumb.boundingBox()).x-tb.x)<2,'Thumbnail package geometry must undo');
+    const resize=thumb.getByRole('button',{name:'썸네일 500 패키지 박스 크기 조절',exact:true});await resize.focus();await p.keyboard.press('ArrowRight');
+    assert((await thumb.boundingBox()).width>tb.width,'Thumbnail package resize must work in a scaled canvas');
+    await resize.scrollIntoViewIfNeeded();const rh=await resize.boundingBox();await p.mouse.move(rh.x+rh.width/2,rh.y+rh.height/2);await p.mouse.down();await p.mouse.move(rh.x+rh.width/2+8,rh.y+rh.height/2+10,{steps:5});await p.mouse.up();
+    assert((await thumb.boundingBox()).width>tb.width+6,'Thumbnail corner handle must be reachable inside the clipped canvas and resize by pointer');
+    await p.getByRole('button',{name:'썸네일 500 패키지 사진 편집',exact:true}).click();
+    const thumbMove=p.getByRole('button',{name:'썸네일 500 패키지 이동',exact:true});await thumbMove.click();
+    await p.getByRole('button',{name:'썸네일 500 패키지 회전',exact:true}).focus();await p.keyboard.press('ArrowRight');
+    assert(await thumb.locator('img').getAttribute('data-image-angle')==='1','Thumbnail photo-only mode must remain available');
+    await p.getByRole('button',{name:'썸네일 500 패키지 박스 편집',exact:true}).click();await saved();
+    const thumbPosition=()=>thumb.evaluate(e=>{const a=e.getBoundingClientRect(),b=e.closest('[data-image-canvas]').getBoundingClientRect();return{x:a.x-b.x,y:a.y-b.y,width:a.width,height:a.height};});
+    const thumbGeometry=await thumbPosition();await p.reload();await saved();
+    const restoredThumb=await thumbPosition();
+    assert(['x','y','width','height'].every(key=>Math.abs(restoredThumb[key]-thumbGeometry[key])<1.5),`Thumbnail box geometry must survive reload within screen-pixel rounding: ${JSON.stringify({thumbGeometry,restoredThumb})}`);
+    const downloadEvent=p.waitForEvent('download');await p.locator('.builder-thumbnails').getByRole('button',{name:'다운로드',exact:true}).nth(2).click();
+    const stream=await (await downloadEvent).createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk);
+    const jpg=await p.evaluate(async base64=>{const b=Uint8Array.from(atob(base64),v=>v.charCodeAt(0)),i=await createImageBitmap(new Blob([b],{type:'image/jpeg'}));const c=new OffscreenCanvas(i.width,i.height),x=c.getContext('2d');x.drawImage(i,0,0);const d=x.getImageData(0,0,i.width,i.height).data;let gold=0,product=0;for(let p=0;p<d.length;p+=4){if(d[p]>180&&d[p+1]>150&&d[p+1]<225&&d[p+2]>70&&d[p+2]<165&&d[p+1]-d[p+2]>20)gold++;if(d[p]>130&&d[p]<190&&d[p+1]>20&&d[p+1]<100&&d[p+2]>50&&d[p+2]<140)product++;}return{width:i.width,height:i.height,gold,product};},Buffer.concat(chunks).toString('base64'));
+    assert(jpg.width===500&&jpg.height===500&&jpg.gold===0&&jpg.product>100,`Saved thumbnail JPG must retain the package photo and exclude box/photo editing controls: ${JSON.stringify(jpg)}`);
+    await card.scrollIntoViewIfNeeded();await p.screenshot({path:'C:/Users/BNN/Documents/ChatGPT/detail_builder/package-box-editing.png'});
+    return {passed:14,jpg};
+  } finally { await context.close(); }
+}

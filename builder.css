@@ -677,6 +677,9 @@
 .builder-option-tools button:disabled { opacity: .35; cursor: default; }
 .builder-option-tools span { padding: 0 4px; font-size: 9px; color: #aaa18a; }
 .builder-option-resize { display: block; width: 13px; height: 13px; margin: 0; padding: 0; border: 1px solid #765922; border-radius: 3px; background: #f1d292; cursor: nwse-resize; }
+.builder-package-tools { top: 6px; }
+.builder-thumbnail-package-tools { display: flex; gap: 4px; }
+.builder-thumbnail-package-tools button[aria-pressed=true] { color: #251d10; background: #dec58b; border-color: #dec58b; }
 .builder-brand-caption { display: flex; align-items: center; gap: 5px; }
 .builder-brand-caption > span:first-child { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .builder-history-controls { display: flex; gap: 6px; margin-left: auto; }
