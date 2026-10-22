@@ -1,0 +1,61 @@
+async (page) => {
+  const context = await page.context().browser().newContext({ viewport: { width: 1560, height: 1100 } });
+  const p = await context.newPage();
+  try {
+    await p.goto('http://127.0.0.1:3001/image-lab.html');
+    await p.evaluate(async () => {
+      const source = await (await fetch('/lab/main.tsx')).text();
+      const version = source.match(/react-dom_client\.js\?v=([^\"]+)/)[1];
+      const rm = await import(`/node_modules/.vite/deps/react.js?v=${version}`), React = rm.default ?? rm;
+      const cm = await import(`/node_modules/.vite/deps/react-dom_client.js?v=${version}`), { createRoot } = cm.default ?? cm;
+      const { ImageProcessor } = await import('/lab/ImageProcessor.tsx');
+      const c = new OffscreenCanvas(1000, 1000), x = c.getContext('2d');
+      x.fillStyle = '#9c5667'; x.fillRect(200, 600, 600, 120);
+      const blob = await c.convertToBlob();
+      const target = document.createElement('div'); document.body.replaceChildren(target);
+      createRoot(target).render(React.createElement(ImageProcessor, { initial: { id: 'focus-fixture', source: URL.createObjectURL(blob), cutout: blob }, onApply: async () => {} }));
+    });
+    await p.waitForFunction(() => document.querySelector('button[data-image-apply]')?.disabled === false);
+    const assert = (value, message) => { if (!value) throw new Error(message); };
+    assert(await p.getByRole('button', { name: '보정 결과 크게 보기', exact: true }).getAttribute('aria-pressed') === 'true', 'Builder color editing must start with a large result');
+    const canvas = p.getByRole('img', { name: '톤·그림자 적용', exact: true });
+    const large = await canvas.boundingBox();
+    const panel = p.locator('[data-result-panel] .image-stage');
+    const visible = await panel.evaluate(e => { const c = e.querySelector('canvas'), s = parseFloat(c.style.width) / 1000; const r = c.getBoundingClientRect(), b = e.getBoundingClientRect(); return { left:r.left+200*s, right:r.left+800*s, top:r.top+600*s, bottom:r.top+720*s, stage:{left:b.left,right:b.right,top:b.top,bottom:b.bottom} }; });
+    assert(visible.left >= visible.stage.left && visible.right <= visible.stage.right && visible.top >= visible.stage.top && visible.bottom <= visible.stage.bottom, `Product-fit must center the visible product, including large source margins: ${JSON.stringify(visible)}`);
+    await p.getByRole('button', { name: '3장 비교', exact: true }).click();
+    const small = await canvas.boundingBox(); assert(large.width > small.width * 2, 'Focused result must substantially enlarge the product');
+    await p.getByRole('button', { name: '보정 결과 크게 보기', exact: true }).click();
+    const beforeZoom = await canvas.boundingBox(); await p.getByRole('button', { name: '보정 결과 확대', exact: true }).click();
+    await p.waitForFunction(w => parseFloat(document.querySelector('canvas[aria-label="톤·그림자 적용"]').style.width) > w, beforeZoom.width);
+    await p.getByRole('button', { name: '제품 맞춤', exact: true }).click();
+    await p.waitForFunction(w => Math.abs(parseFloat(document.querySelector('canvas[aria-label="톤·그림자 적용"]').style.width)-w)<2, large.width);
+    await panel.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const pan = await panel.evaluate(e => { e.scrollLeft += 24; e.scrollTop += 18; return { x: e.scrollLeft, y: e.scrollTop }; });
+    await p.getByRole('slider', { name: '중간톤 감마', exact: true }).fill('1.1');
+    await p.waitForFunction(() => document.querySelector('button[data-image-apply]')?.disabled === false);
+    const keptPan = await panel.evaluate(e => ({ x: e.scrollLeft, y: e.scrollTop }));
+    assert(Math.abs(pan.x-keptPan.x)<2 && Math.abs(pan.y-keptPan.y)<2, `Color adjustment must preserve the current enlarged view: ${JSON.stringify({pan,keptPan})}`);
+    const point = p.getByRole('button', { name: '커브 점 3', exact: true });
+    await point.scrollIntoViewIfNeeded(); const b = await point.boundingBox();
+    const output = p.getByRole('spinbutton', { name: '커브 선택점 출력', exact: true });
+    await p.mouse.move(b.x+b.width/2+2,b.y+b.height/2+2); await p.mouse.down();
+    await p.mouse.move(b.x+b.width/2+2,b.y+b.height/2-6,{steps:4}); await p.mouse.up();
+    const gentle = Number(await output.inputValue()); assert(gentle >= 129 && gentle <= 132, `8px drag must be gentle, with no jump from clicking off-center: ${gentle}`);
+    await output.fill('128'); await point.scrollIntoViewIfNeeded(); const fine = await point.boundingBox();
+    await p.keyboard.down('Shift'); await p.mouse.move(fine.x+fine.width/2,fine.y+fine.height/2); await p.mouse.down(); await p.mouse.move(fine.x+fine.width/2,fine.y+fine.height/2-20,{steps:5}); await p.mouse.up(); await p.keyboard.up('Shift');
+    const precise = Number(await output.inputValue()); assert(precise >= 128 && precise <= 130, `Shift must further reduce drag sensitivity: ${precise}`);
+    await p.getByRole('button', { name: '현재 채널 초기화', exact: true }).click();
+    const graph = p.getByRole('group', { name: 'RGB 전체 커브 그래프', exact: true }); const g = await graph.boundingBox();
+    await graph.click({position:{x:g.width*.37,y:g.height*.2}});
+    assert(Math.abs(Number(await output.inputValue()) - Number(await p.getByRole('spinbutton', { name: '커브 선택점 입력', exact: true }).inputValue())) <= 1, 'Adding a point must initially follow the existing curve without a brightness jump');
+    await p.waitForFunction(() => document.querySelector('button[data-image-apply]')?.disabled === false);
+    const dimensions = await p.locator('[data-result-panel] a[download]').evaluate(async link => { const image = await createImageBitmap(await (await fetch(link.href)).blob()); const size = { width: image.width, height: image.height }; image.close(); return size; });
+    assert(dimensions.width === 1000 && dimensions.height === 1000, 'Preview zoom must preserve the full original PNG dimensions');
+    await p.screenshot({ path: 'C:/Users/BNN/Documents/ChatGPT/detail_builder/color-focus-preview.png' });
+    await p.setViewportSize({ width: 390, height: 844 });
+    assert(await p.locator('.image-processor').evaluate(e => e.scrollWidth <= e.clientWidth + 1), 'Focused preview and color controls must fit a narrow screen');
+    await p.screenshot({ path: 'C:/Users/BNN/Documents/ChatGPT/detail_builder/color-focus-mobile.png', fullPage: true });
+    return { passed: 10, largeWidth: large.width, comparisonWidth: small.width, gentle, precise };
+  } finally { await context.close(); }
+}

@@ -42,6 +42,10 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
   const [shadow, setShadow] = useState<ShadowSettings>({ ...DEFAULT_SHADOW });
   const [checker, setChecker] = useState(true);
   const [actualSize, setActualSize] = useState(false);
+  const [focused, setFocused] = useState(Boolean(initial));
+  const [fitProduct, setFitProduct] = useState(true);
+  const [zoom, setZoom] = useState(1);
+  const [viewRevision, setViewRevision] = useState(0);
   const [dimensions, setDimensions] = useState('');
   const [removalTime, setRemovalTime] = useState<number | null>(null);
   const [finishTime, setFinishTime] = useState<number | null>(null);
@@ -173,7 +177,7 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
     <section className="adjust" aria-label="후보정 설정">
       <label className="tone">톤 보정 <input type="range" min="0" max="100" value={tone} onChange={e => changeTone(Number(e.target.value))} disabled={busy} aria-label="톤 보정 강도"/><output>{tone}%</output></label>
       <label><input type="checkbox" checked={checker} onChange={e => setChecker(e.target.checked)}/>체크 배경으로 보기</label>
-      <label><input type="checkbox" checked={actualSize} onChange={e => setActualSize(e.target.checked)}/>원본 크기(100%)</label>
+      <label><input type="checkbox" checked={actualSize} onChange={e => { setActualSize(e.target.checked); setZoom(1); }}/>원본 크기(100%)</label>
       <span className="hint">보정값을 바꿔도 누끼는 다시 계산하지 않습니다.</span>
     </section>
     <section className="shadow-adjust" aria-label="그림자 조절">
@@ -183,13 +187,17 @@ export function ImageProcessor({ initial, onApply, onRestore }: {
       </label>)}</div>
       <p>그림자 영역을 끌면 이동, 네모 손잡이는 크기, 둥근 ↻ 손잡이는 각도를 조절합니다. 이미지 밖으로 나간 그림자는 잘립니다.</p>
     </section>
-    <div className="image-edit-workbench"><section className="comparison" aria-label="처리 결과 비교">
+    <div className="preview-view-tools" role="group" aria-label="보정 미리보기 보기 방식">
+      <div className="preview-view-modes"><button type="button" aria-pressed={focused} onClick={() => setFocused(true)}>보정 결과 크게 보기</button><button type="button" aria-pressed={!focused} onClick={() => setFocused(false)}>3장 비교</button></div>
+      {focused && <div className="preview-zoom-tools"><button type="button" aria-pressed={fitProduct && !actualSize} onClick={() => { setFitProduct(true); setActualSize(false); setZoom(1); setViewRevision(value => value + 1); }}>제품 맞춤</button><button type="button" aria-pressed={!fitProduct && !actualSize} onClick={() => { setFitProduct(false); setActualSize(false); setZoom(1); setViewRevision(value => value + 1); }}>전체 사진 맞춤</button><button type="button" aria-label="보정 결과 축소" disabled={zoom <= .5} onClick={() => { setActualSize(false); setZoom(value => Math.max(.5, Math.round((value - .25) * 100) / 100)); }}>−</button><output aria-label="보정 결과 확대율">{Math.round(zoom * 100)}%</output><button type="button" aria-label="보정 결과 확대" disabled={zoom >= 3} onClick={() => { setActualSize(false); setZoom(value => Math.min(3, Math.round((value + .25) * 100) / 100)); }}>+</button></div>}
+    </div>
+    <div className="image-edit-workbench"><section className={`comparison ${focused ? 'focused' : ''}`} aria-label="처리 결과 비교">
       {[
         { title: '원본', url: sourceUrl, note: '원본 파일 유지', download: '' },
         { title: '누끼 결과', url: cutout ? cutoutUrl : '', note: `${cold ? '세션 첫 실행 · ' : '세션 재실행 · '}${seconds(removalTime)}`, download: `${name}_cutout.png` },
         { title: '톤·그림자 적용', url: finished ? finishedUrl : '', note: `추가 보정 ${seconds(finishTime)}`, download: `${name}_finished.png` },
-      ].map(item => <article key={item.title}><div className="panel-heading"><h2>{item.title}</h2>{item.download && item.url && <a href={item.url} download={item.download}>PNG 저장 ↗</a>}</div><div className={`image-stage ${checker ? 'checker' : ''} ${actualSize ? 'native-size' : ''}`}>
-        {item.title === '톤·그림자 적용' && toned ? <ShadowPreview blob={toned.blob} settings={shadow} actualSize={actualSize} onChange={changeShadow} onExport={completeExport} onError={previewError}/> : item.url ? <img src={item.url} alt={item.title} onLoad={item.title === '원본' ? e => setDimensions(`${e.currentTarget.naturalWidth} × ${e.currentTarget.naturalHeight}`) : undefined}/> : <div className="empty">{item.title === '원본' ? '원본 사진을 넣어주세요' : busy ? '이미지 처리 중…' : '실행 후 결과가 표시됩니다'}</div>}
+      ].map(item => <article key={item.title} data-result-panel={item.title === '톤·그림자 적용' ? '' : undefined}><div className="panel-heading"><h2>{item.title}</h2>{item.download && item.url && <a href={item.url} download={item.download}>PNG 저장 ↗</a>}</div><div className={`image-stage ${checker ? 'checker' : ''} ${actualSize ? 'native-size' : ''}`}>
+        {item.title === '톤·그림자 적용' && toned ? <ShadowPreview blob={toned.blob} settings={shadow} actualSize={actualSize} fitProduct={focused && fitProduct && !actualSize} zoom={focused ? zoom : 1} viewRevision={viewRevision} onChange={changeShadow} onExport={completeExport} onError={previewError}/> : item.url ? <img src={item.url} alt={item.title} onLoad={item.title === '원본' ? e => setDimensions(`${e.currentTarget.naturalWidth} × ${e.currentTarget.naturalHeight}`) : undefined}/> : <div className="empty">{item.title === '원본' ? '원본 사진을 넣어주세요' : busy ? '이미지 처리 중…' : '실행 후 결과가 표시됩니다'}</div>}
       </div><footer>{item.url ? item.note : '—'}</footer></article>)}
     </section><ColorAdjustmentsPanel value={color} blob={cutout} disabled={busy || !cutout || applying} onChange={changeColor}/></div>
     <p className="footnote">누끼는 가장자리와 작은 부품을 확대해 확인하세요. 기본 톤은 약하게, 레벨·커브는 설정한 값대로 적용합니다. 원본 해상도·비율·투명도는 유지합니다.</p>

@@ -7,17 +7,21 @@ interface Props {
   blob: Blob;
   settings: ShadowSettings;
   actualSize: boolean;
+  fitProduct?: boolean;
+  zoom?: number;
+  viewRevision?: number;
   onChange: (settings: ShadowSettings) => void;
   onExport: (blob: Blob) => void;
   onError: (message: string) => void;
 }
 
 /** The cached product and alpha mask repaint on animation frames; PNG encoding waits for idle. */
-export function ShadowPreview({ blob, settings, actualSize, onChange, onExport, onError }: Props) {
+export function ShadowPreview({ blob, settings, actualSize, fitProduct = false, zoom = 1, viewRevision = 0, onChange, onExport, onError }: Props) {
   const surface = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null);
   const [resource, setResource] = useState<Resource | null>(null);
   const [view, setView] = useState({ width: 1, height: 1 });
   const [interacting, setInteracting] = useState(false);
+  const centeredView = useRef('');
   const gesture = useRef<{ id: number; mode: Mode; x: number; y: number; settings: ShadowSettings; productWidth: number; baseHeight: number; centerX: number; centerY: number; startAngle: number } | null>(null);
 
   useEffect(() => {
@@ -42,13 +46,35 @@ export function ShadowPreview({ blob, settings, actualSize, onChange, onExport, 
     if (!stage || !resource) return;
     const measure = () => {
       const { width, height } = resource.image;
-      const scale = actualSize ? 1 : Math.min(1, stage.clientWidth / width, stage.clientHeight / height);
-      setView({ width: width * scale, height: height * scale });
+      const bounds = fitProduct ? resource.bounds : null;
+      const fit = bounds
+        ? Math.min(stage.clientWidth / ((bounds.right - bounds.left + 1) * 1.18), stage.clientHeight / ((bounds.bottom - bounds.top + 1) * 1.35))
+        : Math.min(1, stage.clientWidth / width, stage.clientHeight / height);
+      const scale = (actualSize ? 1 : fit) * zoom;
+      setView(previous => previous.width === width * scale && previous.height === height * scale ? previous : { width: width * scale, height: height * scale });
     };
     measure();
     const observer = new ResizeObserver(measure); observer.observe(stage);
     return () => observer.disconnect();
-  }, [resource, actualSize]);
+  }, [resource, actualSize, fitProduct, zoom]);
+
+  // Center only when the view geometry changes; color updates keep the user's scroll position.
+  const focusBounds = resource?.bounds;
+  const imageWidth = resource?.image.width;
+  useLayoutEffect(() => {
+    const stage = surface.current?.parentElement;
+    if (!stage || !imageWidth) return;
+    const key = [view.width, view.height, imageWidth, fitProduct, focusBounds?.left, focusBounds?.right, focusBounds?.top, focusBounds?.bottom, viewRevision].join(':');
+    if (centeredView.current === key) return;
+    const frame = requestAnimationFrame(() => {
+      const scale = view.width / imageWidth;
+      const x = fitProduct && focusBounds ? (focusBounds.left + focusBounds.right) / 2 * scale : view.width / 2;
+      const y = fitProduct && focusBounds ? (focusBounds.top + focusBounds.bottom) / 2 * scale : view.height / 2;
+      stage.scrollTo({ left: Math.max(0, x - stage.clientWidth / 2), top: Math.max(0, y - stage.clientHeight / 2) });
+      centeredView.current = key;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [view.width, view.height, imageWidth, fitProduct, focusBounds?.left, focusBounds?.right, focusBounds?.top, focusBounds?.bottom, viewRevision]);
 
   useLayoutEffect(() => {
     if (!resource || !canvas.current) return;

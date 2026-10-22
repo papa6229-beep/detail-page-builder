@@ -22,9 +22,10 @@ async (page) => {
     await dialog.getByRole('slider', { name: '입력 흰색', exact: true }).fill('230');
     await dialog.getByRole('slider', { name: '중간톤 감마', exact: true }).fill('1.25');
     await dialog.getByRole('slider', { name: '출력 흰색', exact: true }).fill('245');
-    const midpoint = dialog.getByRole('button', { name: '커브 점 3', exact: true }); await midpoint.scrollIntoViewIfNeeded(); const box = await midpoint.boundingBox();
+    const midpoint = dialog.getByRole('button', { name: '커브 점 3', exact: true }); await midpoint.evaluate(element => element.scrollIntoView({ block: 'center' })); const box = await midpoint.boundingBox();
     await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await p.mouse.down(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 25, { steps: 5 }); await p.mouse.up();
-    assert(Number(await dialog.getByRole('spinbutton', { name: '커브 선택점 출력', exact: true }).inputValue()) > 145, 'Curve dragging must update the selected point');
+    const draggedOutput = Number(await dialog.getByRole('spinbutton', { name: '커브 선택점 출력', exact: true }).inputValue());
+    assert(draggedOutput >= 130 && draggedOutput <= 140, `Curve dragging must update the selected point gently: ${draggedOutput}`);
     await dialog.getByRole('spinbutton', { name: '커브 선택점 출력', exact: true }).fill('190');
     const graph = dialog.getByRole('group', { name: 'RGB 전체 커브 그래프', exact: true }); const rectangle = await graph.boundingBox();
     await graph.click({ position: { x: rectangle.width * .37, y: rectangle.height * .6 } });
